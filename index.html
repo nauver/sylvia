@@ -1,0 +1,2123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Sylvia's CoR Quest</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    width: 100%; height: 100%;
+    background: #003399;
+    overflow: hidden;
+    font-family: 'Courier New', monospace;
+    color: #fff;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+  #wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #003399;
+  }
+  #gameCanvas {
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    background: #87ceeb;
+    max-width: 100vw;
+    max-height: 100vh;
+    touch-action: none;
+  }
+  #hud {
+    position: absolute;
+    top: 10px; left: 10px; right: 10px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 14px;
+    text-shadow: 2px 2px 0 #000;
+    pointer-events: none;
+    z-index: 10;
+    font-weight: bold;
+  }
+  .hud-item { background: rgba(0,51,153,0.8); padding: 6px 10px; border: 2px solid #FFCC00; border-radius: 4px; }
+  #music-controls {
+    position: absolute;
+    top: 42px; right: 10px;
+    background: rgba(0,51,153,0.8);
+    border: 2px solid #FFCC00;
+    border-radius: 4px;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    z-index: 15;
+  }
+  #music-toggle {
+    background: none;
+    border: none;
+    color: #FFCC00;
+    font-family: inherit;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+  }
+  #music-volume {
+    width: 80px;
+    cursor: pointer;
+    accent-color: #FFCC00;
+  }
+  #music-track {
+    position: absolute;
+    top: 80px; right: 10px;
+    background: rgba(0,51,153,0.6);
+    border: 1px solid #FFCC00;
+    border-radius: 3px;
+    padding: 3px 8px;
+    color: #FFCC00;
+    font-size: 11px;
+    font-weight: bold;
+    z-index: 15;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s;
+  }
+  #music-track.show { opacity: 1; }
+  #touch-controls {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    display: none;
+    justify-content: space-between;
+    padding: 20px;
+    pointer-events: none;
+    z-index: 20;
+  }
+  .touch-btn {
+    width: 70px; height: 70px;
+    background: rgba(255,204,0,0.3);
+    border: 3px solid #FFCC00;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 30px;
+    pointer-events: auto;
+    color: #fff;
+    font-weight: bold;
+    text-shadow: 2px 2px 0 #000;
+  }
+  .touch-btn:active { background: rgba(255,204,0,0.7); }
+  .left-controls { display: flex; gap: 10px; }
+  .right-controls { display: flex; gap: 10px; }
+  @media (pointer: coarse), (max-width: 900px) {
+    #touch-controls { display: flex; }
+  }
+  #overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 51, 153, 0.95);
+    z-index: 100;
+    text-align: center;
+    padding: 20px;
+    overflow-y: auto;
+  }
+  #overlay h1 {
+    font-size: clamp(26px, 6vw, 48px);
+    margin-bottom: 14px;
+    color: #FFCC00;
+    text-shadow: 4px 4px 0 #003399, 6px 6px 0 #000;
+    letter-spacing: 2px;
+  }
+  #overlay h2 {
+    font-size: clamp(18px, 4vw, 28px);
+    margin-bottom: 12px;
+    color: #FFCC00;
+    text-shadow: 3px 3px 0 #000;
+  }
+  #overlay p {
+    font-size: clamp(13px, 2.3vw, 17px);
+    margin-bottom: 8px;
+    max-width: 650px;
+    line-height: 1.5;
+  }
+  .btn {
+    margin-top: 16px;
+    padding: 14px 28px;
+    font-size: 18px;
+    font-weight: bold;
+    background: #FFCC00;
+    color: #003399;
+    border: 4px solid #fff;
+    cursor: pointer;
+    font-family: inherit;
+    text-shadow: none;
+    border-radius: 4px;
+    box-shadow: 4px 4px 0 #000;
+    transition: all 0.1s;
+  }
+  .btn:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 #000; }
+  .instructions { font-size: 13px; margin: 12px 0; color: #ddd; }
+  .instructions span { color: #FFCC00; }
+  .legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 6px 20px;
+    margin: 12px 0;
+    font-size: 12px;
+    text-align: left;
+    max-width: 600px;
+  }
+  .legend div { padding: 3px 0; }
+  .levels-preview {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin: 14px 0;
+    max-width: 700px;
+  }
+  .lvl-card {
+    background: rgba(255,204,0,0.15);
+    border: 2px solid #FFCC00;
+    padding: 8px 12px;
+    font-size: 12px;
+    border-radius: 4px;
+    min-width: 170px;
+  }
+  .lvl-card strong { color: #FFCC00; display: block; margin-bottom: 4px; font-size: 13px; }
+  #overlay.hidden { display: none; }
+  .credit { font-size: 10px; color: #99aabb; margin-top: 10px; }
+
+  /* Multi-step intro */
+  .step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    max-width: 720px;
+    width: 100%;
+  }
+  .step.hidden { display: none !important; }
+  #menu-art {
+    display: block;
+    width: 100%;
+    max-width: 500px;
+    height: auto;
+    margin: 6px auto 12px auto;
+    image-rendering: pixelated;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: crisp-edges;
+    border: 3px solid #FFCC00;
+    border-radius: 6px;
+    box-shadow: 0 0 25px rgba(255,204,0,0.3);
+    background: #003399;
+  }
+  .rules-section {
+    margin: 10px 0;
+    width: 100%;
+    max-width: 650px;
+  }
+  .rules-section h3 {
+    color: #FFCC00;
+    font-size: clamp(14px, 2.5vw, 18px);
+    margin-bottom: 8px;
+    text-shadow: 2px 2px 0 #000;
+    letter-spacing: 1px;
+  }
+  .intro-tagline {
+    font-size: clamp(14px, 2.6vw, 18px);
+    color: #fff;
+    background: rgba(0,0,0,0.3);
+    padding: 10px 14px;
+    border-radius: 6px;
+    border-left: 4px solid #FFCC00;
+    border-right: 4px solid #FFCC00;
+    margin: 8px 0 12px 0;
+    max-width: 600px;
+    line-height: 1.5;
+  }
+  .char-badges {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin: 4px 0 8px 0;
+    font-size: 12px;
+    color: #FFCC00;
+    font-weight: bold;
+    letter-spacing: 1px;
+  }
+  .char-badges span { background: rgba(0,0,0,0.4); padding: 4px 10px; border-radius: 4px; border: 1px solid #FFCC00; }
+
+  /* Challenge overlay (Achim's trials) */
+  #challenge-overlay {
+    position: absolute; inset: 0;
+    background: rgba(10, 5, 30, 0.88);
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  #challenge-overlay.hidden { display: none; }
+  .challenge-box {
+    background: linear-gradient(180deg, #2a0a4a 0%, #003399 100%);
+    border: 4px solid #FFCC00;
+    border-radius: 8px;
+    padding: 20px 24px;
+    max-width: 580px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 0 40px rgba(255, 204, 0, 0.4);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .achim-header {
+    font-size: clamp(18px, 3vw, 22px);
+    color: #FFCC00;
+    font-weight: bold;
+    margin-bottom: 8px;
+    text-shadow: 2px 2px 0 #000;
+    letter-spacing: 1px;
+  }
+  .achim-taunt {
+    font-size: clamp(13px, 2.2vw, 16px);
+    color: #e0c0ff;
+    font-style: italic;
+    margin-bottom: 14px;
+    line-height: 1.4;
+  }
+  .achim-emoji {
+    font-size: 48px;
+    margin-bottom: 4px;
+    filter: drop-shadow(2px 2px 0 #000);
+    animation: wiggle 2s infinite;
+  }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+  }
+  .challenge-prompt {
+    font-size: clamp(14px, 2.5vw, 18px);
+    color: #fff;
+    background: rgba(0,0,0,0.4);
+    padding: 12px;
+    border-radius: 6px;
+    margin-bottom: 14px;
+    border: 2px solid rgba(255,204,0,0.5);
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    line-height: 1.4;
+  }
+  .challenge-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .opt-btn {
+    padding: 12px 10px;
+    font-size: clamp(13px, 2.2vw, 16px);
+    font-weight: bold;
+    background: #FFCC00;
+    color: #003399;
+    border: 3px solid #fff;
+    cursor: pointer;
+    font-family: inherit;
+    border-radius: 4px;
+    box-shadow: 3px 3px 0 #000;
+    transition: all 0.1s;
+    min-height: 54px;
+  }
+  .opt-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 #000; }
+  .opt-btn.correct { background: #4caf50; color: #fff; border-color: #fff; }
+  .opt-btn.wrong { background: #e53935; color: #fff; border-color: #fff; }
+
+  /* Simon says mini-game */
+  .simon-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    max-width: 340px;
+    margin: 0 auto 10px auto;
+  }
+  .simon-btn {
+    aspect-ratio: 1;
+    border: 4px solid #fff;
+    cursor: pointer;
+    border-radius: 12px;
+    opacity: 0.55;
+    transition: all 0.1s;
+    box-shadow: 4px 4px 0 #000;
+    min-height: 80px;
+  }
+  .simon-btn.s0 { background: #e53935; }
+  .simon-btn.s1 { background: #4caf50; }
+  .simon-btn.s2 { background: #1e88e5; }
+  .simon-btn.s3 { background: #fdd835; }
+  .simon-btn.active { opacity: 1; transform: scale(1.08); box-shadow: 0 0 30px currentColor; }
+  .simon-status {
+    color: #FFCC00;
+    font-weight: bold;
+    margin-top: 6px;
+    font-size: 14px;
+    min-height: 22px;
+  }
+  .eu-ring {
+    display: inline-block;
+    color: #FFCC00;
+    margin: 0 4px;
+    animation: twinkle 2s infinite;
+  }
+  @keyframes twinkle {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="gameCanvas" width="800" height="480"></canvas>
+  <div id="hud">
+    <div class="hud-item">❤️ <span id="hp">3</span></div>
+    <div class="hud-item">📋 <span id="score">0</span></div>
+    <div class="hud-item">⭐ <span id="stars">0</span>/12</div>
+    <div class="hud-item">👥 <span id="team">0</span> freed</div>
+    <div class="hud-item">🏛️ <span id="level">—</span></div>
+  </div>
+  <div id="music-controls">
+    <button id="music-toggle" title="Mute / Unmute">♪ ON</button>
+    <input type="range" id="music-volume" min="0" max="100" value="22" title="Volume">
+  </div>
+  <div id="music-track">🎵 Ode to Joy</div>
+  <div id="challenge-overlay" class="hidden"></div>
+  <div id="overlay">
+    <div id="intro-step-1" class="step">
+      <h1><span class="eu-ring">⭐</span>SYLVIA'S CoR QUEST<span class="eu-ring">⭐</span></h1>
+      <canvas id="menu-art" width="500" height="220"></canvas>
+      <div class="char-badges">
+        <span>🦸 SYLVIA — the hero</span>
+        <span>🧙‍♂️ ACHIM — the villain</span>
+      </div>
+      <p class="intro-tagline">
+        The terrible wizard <b style="color:#e0c0ff">ACHIM</b> has locked Sylvia's colleagues in office-cages<br>
+        across the <b style="color:#FFCC00">3 priorities</b> of the Committee of the Regions.<br>
+        Only Sylvia, with her wit and courage, can save them!
+      </p>
+      <button class="btn" id="nextBtn">▶ NEXT · How to play</button>
+      <div class="credit">For Sylvia, Fabrizio and the whole CoR team · Pixel art &amp; code by Claude</div>
+    </div>
+
+    <div id="intro-step-2" class="step hidden">
+      <h1><span class="eu-ring">⭐</span>HOW TO PLAY<span class="eu-ring">⭐</span></h1>
+
+      <div class="rules-section">
+        <h3>🎮 CONTROLS</h3>
+        <div class="instructions">
+          PC: <span>←/→</span> move · <span>SPACE / ↑</span> jump<br>
+          Mobile: on-screen touch buttons<br>
+          🎵 Music &amp; volume: top-right controls
+        </div>
+      </div>
+
+      <div class="rules-section">
+        <h3>🏛️ 3 LEVELS · 3 TRIALS BY ACHIM</h3>
+        <div class="levels-preview">
+          <div class="lvl-card"><strong>🌱 Lvl.1 — Green Transition</strong>Free the WEB team<br><i>Trial: Green Deal quiz</i></div>
+          <div class="lvl-card"><strong>🤝 Lvl.2 — Territorial Cohesion</strong>Free the Social Media team<br><i>Trial: Simon-says memory puzzle</i></div>
+          <div class="lvl-card"><strong>⭐ Lvl.3 — The Future of Europe</strong>Free the Visual Comm' team<br><i>Trial: EPSO abstract reasoning</i></div>
+        </div>
+      </div>
+
+      <div class="rules-section">
+        <h3>⭐ SCORING &amp; ENEMIES</h3>
+        <div class="legend">
+          <div>📋 Signed form: +100 pts</div>
+          <div>⭐ EU Star: +200 pts</div>
+          <div>☕ Coffee: +1 life (rare!)</div>
+          <div>👤 Freed colleague: +300 pts</div>
+          <div>📄 Paperwork: jump on it!</div>
+          <div>📞 Ringing phone: avoid!</div>
+          <div>📧 Urgent email: squash it!</div>
+          <div>👔 Fabrizio: level goal</div>
+        </div>
+      </div>
+
+      <button class="btn" id="startBtn">▶ START THE ADVENTURE</button>
+      <button class="btn" id="backBtn" style="background:transparent;color:#FFCC00;border-color:#FFCC00;box-shadow:none;margin-top:8px;font-size:14px;padding:8px 18px">◀ Back</button>
+    </div>
+  </div>
+</div>
+
+<div id="touch-controls">
+  <div class="left-controls">
+    <div class="touch-btn" id="btnLeft">◀</div>
+    <div class="touch-btn" id="btnRight">▶</div>
+  </div>
+  <div class="right-controls">
+    <div class="touch-btn" id="btnJump">⤒</div>
+  </div>
+</div>
+
+<script>
+// ============ SYLVIA'S CoR QUEST ============
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+const W = canvas.width;
+const H = canvas.height;
+const GRAVITY = 0.6;
+const JUMP_POWER = -12;
+const MOVE_SPEED = 3.5;
+
+// ============ EU COLORS ============
+const EU_BLUE = '#003399';
+const EU_GOLD = '#FFCC00';
+
+// ============ PIXEL ART PALETTE ============
+const PAL = {
+  'h': '#3d2817', 'H': '#5a3a20',
+  's': '#f4c892', 'S': '#e0a870',
+  'e': '#1a1a2e', 'E': '#2d2d44',
+  'm': '#c94d4d', 'w': '#ffffff',
+  'f': '#1a1a2e', 'F': '#0d0d1a',
+  't': '#8b0000',
+  'g': '#555555', 'G': '#3d3d3d',
+  'p': '#f0e6d2', 'P': '#c9b98a', 'l': '#1a1a2e',
+  'n': '#2a2a2a', 'N': '#0d0d0d', 'r': '#ff3b30',
+  'b': '#4a90e2', 'B': '#2d5a8c',
+  'c': '#8b4513', 'C': '#5a2d0c',
+  'u': '#ffffff', 'U': '#d0d0d0',
+  'o': '#deb887', 'O': '#a0825a',
+  'y': '#FFCC00', 'Y': '#d4a800', // EU gold stars
+  'k': EU_BLUE,
+  'q': '#8b4513', // cage brown
+  'Q': '#5a2d0c',
+  'x': '#ff0000', // lock red
+  // Achim the wizard
+  'z': '#4a1a7a', // purple robe
+  'Z': '#2a0a4a', // dark purple
+  'v': '#6b2aaa', // light purple
+  'j': '#ffffff', // white beard
+  'J': '#d0d0d0', // beard shadow
+  '.': null,
+};
+
+// Achim the Wizard sprite (12x20)
+const ACHIM = [
+  '.....y......',
+  '....zzz.....',
+  '...zzzzz....',
+  '..zzyzzzz...',
+  '.zzzzzzzzz..',
+  'zzzzzzzzzzz.',
+  '....ssss....',
+  '...sesses...',
+  '...sswwws...',
+  '..sjjjjjjs..',
+  '..jjJjjJjj..',
+  '.jjjjjjjjjj.',
+  '.zzzzzzzzzz.',
+  'vzzzzzzzzzv.',
+  'vzzyzzzyzzv.',
+  'vzzzzzzzzzv.',
+  'vzzzzzzzzzv.',
+  '.zzzzzzzzz..',
+  '.zzz....zzz.',
+  '.zzz....zzz.',
+];
+
+// Sylvia standing
+const SYLVIA = [
+  '....hhhhhhh.....',
+  '...hHHHHHHHh....',
+  '..hHhhhhhhHHh...',
+  '..hssssssssHh...',
+  '.hhssesssesshh..',
+  '.hHsewsssewsHh..',
+  '.hHsssmmmssshh..',
+  '..hssssssssHh...',
+  '...hssssssHh....',
+  '....eeeeeee.....',
+  '...eEeeeeeee....',
+  '..eEEeeeeeeEe...',
+  '..eEeeeeeeeeE...',
+  '..eEeeeeeeeeE...',
+  '..eEEeeeeeEeE...',
+  '...eeeeeeeee....',
+  '...eee...eee....',
+  '...eee...eee....',
+  '...fff...fff....',
+  '...fff...fff....',
+];
+const SYLVIA_JUMP = [
+  '.h.hhhhhhh....h.',
+  'he.hHHHHHHh...eh',
+  'he.hHhhhhHHh..eh',
+  'hEe.hssssHh..eEh',
+  '.hEehsessshheEh.',
+  '..hhhewsewshhh..',
+  '..hhssmmssshh...',
+  '..hssssssssh....',
+  '...hssssssh.....',
+  '....eeeeee......',
+  '...eEeeeeee.....',
+  '..eEEeeeeeEe....',
+  '..eEeeeeeeE.....',
+  '..eEeeeeeeE.....',
+  '..eEEeeeeeE.....',
+  '...eeeeeeee.....',
+  '...eee..eee.....',
+  '...eee..eee.....',
+  '...fff..fff.....',
+  '...fff..fff.....',
+];
+
+const FABRIZIO = [
+  '..GGGGGGGG..',
+  '.GgggggggG..',
+  '.GgssssssG..',
+  'GgsessessgG.',
+  'GgswswswsgG.',
+  'GgsssSsssgG.',
+  'GgsmmmmssgG.',
+  '.GssssssG..',
+  '.ffftffff...',
+  'fffftttfff..',
+  'fffftttfff..',
+  'fffftttfff..',
+  'ffffFffff...',
+  '.ffffffff...',
+  '.fff..fff...',
+  '.fff..fff...',
+  '.fff..fff...',
+  '.fff..fff...',
+];
+
+const PAPER_ENEMY = [
+  '.pppppppppppppp.',
+  'pPlllllllllllPp',
+  'pllllllllllllllp',
+  'pplllllllllllllp',
+  'pPeewsswwssweePp',
+  'pPllmmmmmmmmllPp',
+  '.pplllmmmmlllpp.',
+  '.pPllllllllllPp.',
+  '.pllllllllllllp.',
+  '.pPlllllllllllp.',
+  '.ppllllllllllpp.',
+  '.pPlllllllllllp.',
+  '..pPPPPPPPPPPp..',
+  '...pppppppppp...',
+];
+
+const PHONE_ENEMY = [
+  '..nnnnnnnnnn..',
+  '.nNnnnnnnnnNn.',
+  'nNewsnnnnswneN',
+  'nnnnnmmmmnnnnn',
+  'nNnnnnnnnnnnNn',
+  '.nnnnnnnnnnnn.',
+  '..nnnnrrrnnnn.',
+  '..nnnnnnnnnnn.',
+  '...nnnnnnnn...',
+  '...nnnnnnnn...',
+  '...NNNNNNNN...',
+  '....NNNNNN....',
+];
+
+const EMAIL_ENEMY = [
+  '..bbbbbbbbbbb.',
+  '.bBbbbbbbbbbBb',
+  'bBeewsssweebbB',
+  'bbbbbmmmmbbbbb',
+  'bBbbbbbbbbbbBb',
+  '.bbbbbbbbbbbb.',
+  '..bb@@@@@@bb..',
+  '..bbbbbbbbbb..',
+  '...bbbbbbbb...',
+  '...bbbbbbbb...',
+  '...BBBBBBBB...',
+  '....BBBBBB....',
+];
+
+const FORM = [
+  '.oooooooooo.',
+  'oOOOOOOOOOOo',
+  'oOllllllllOo',
+  'oOllllllllOo',
+  'oOllllllllOo',
+  'oOllllllllOo',
+  'oOllllllllOo',
+  'oOllllllllOo',
+  'oOllllllllOo',
+  'oOllllllllOo',
+  'oOllllllllOo',
+  'oOOOOOOOOOOo',
+  '.oooooooooo.',
+  '.....ll.....',
+];
+
+const COFFEE = [
+  '.uuuuuuuuuu.',
+  'uUcccccccUu.',
+  'uUcccccccUu.',
+  'uUcccccccUu.',
+  'uUcccccccUu.',
+  'uUcccccccUu.',
+  'uUcccccccUu.',
+  'uuuuuuuuuuuu',
+  'u..........u',
+  'uUUUUUUUUUUu',
+  '..uuuuuuuu..',
+  '...UUUUUU...',
+  '....uuuu....',
+  '............',
+];
+
+// EU 5-pointed star sprite
+const EU_STAR = [
+  '......yy......',
+  '.....yYYy.....',
+  '.....yYYy.....',
+  'yyyyyyYYyyyyyy',
+  '.yYYYYYYYYYYy.',
+  '..yYYYYYYYYy..',
+  '...yYYYYYYy...',
+  '...yYYYYYYy...',
+  '..yYYy..yYYy..',
+  '.yYYy....yYYy.',
+  'yYy........yYy',
+  'yy..........yy',
+];
+
+// Colleague — generic pixel person (variable colors via replaceColleague)
+// Palette slots: 'A' hair, 'a' hair light, 'T' top, 't' top light, 's' skin
+const COLLEAGUE_TPL = [
+  '...AAAAAA...',
+  '..AaAAAAaA..',
+  '.AaAAAAAAaA.',
+  '.AssssssssA.',
+  'AassesesssaA',
+  'AasswswswsaA',
+  '.AssssmsssA.',
+  '..AssssssA..',
+  '...sssssss..',
+  '..TtTTTTtT..',
+  '.TtTTTTTTtT.',
+  '.TtTTTTTTtT.',
+  '..TTTTTTTT..',
+  '..TTT..TTT..',
+  '..TTT..TTT..',
+  '..fff..fff..',
+];
+
+// Different hair/top color combos to vary colleagues visually
+const COLLEAGUE_STYLES = [
+  { A: '#3d2817', a: '#5a3a20', T: '#c94d4d', t: '#9c3333' }, // brown hair, red
+  { A: '#d4a017', a: '#f4c842', T: '#2d5a8c', t: '#1a3a5c' }, // blonde, blue
+  { A: '#1a1a1a', a: '#333333', T: '#2d7a4a', t: '#1a5a2a' }, // black hair, green
+  { A: '#8b3a1a', a: '#b84a2a', T: '#6b3a8c', t: '#4a2a6c' }, // red hair, purple
+  { A: '#555555', a: '#7a7a7a', T: '#d4a017', t: '#a07a00' }, // grey hair, yellow
+  { A: '#3d2817', a: '#5a3a20', T: '#1a4a7a', t: '#0d3a5a' }, // brown, blue
+  { A: '#d4a017', a: '#f4c842', T: '#8b4513', t: '#5a2d0c' }, // blonde, brown top
+  { A: '#1a1a1a', a: '#333333', T: '#c94d4d', t: '#9c3333' }, // black, red
+];
+
+// ============ ACHIM'S CHALLENGES ============
+
+// LEVEL 1 — Quiz on Green Transition / European Green Deal
+const GREEN_QUIZ = [
+  { q: "By what year does the EU aim to be climate-neutral?",
+    opts: ["2030", "2040", "2050", "2070"], a: 2 },
+  { q: "What is the EU's flagship green strategy called?",
+    opts: ["Green New Deal", "European Green Deal", "EU Climate Pact", "Fit for 2030"], a: 1 },
+  { q: "'Fit for 55' sets what emissions reduction target by 2030?",
+    opts: ["25%", "40%", "55%", "70%"], a: 2 },
+  { q: "What does 'ETS' stand for in EU climate policy?",
+    opts: ["Energy Transfer System", "Emissions Trading System", "European Transport Scheme", "Eco Tax Standard"], a: 1 },
+  { q: "The Just Transition Fund mainly supports:",
+    opts: ["Agricultural subsidies", "Regions most affected by green transition", "Space research", "Defense industry"], a: 1 },
+  { q: "The EU Biodiversity Strategy aims to protect nature by:",
+    opts: ["2025", "2030", "2040", "2050"], a: 1 },
+  { q: "What share of EU land should be protected by 2030?",
+    opts: ["10%", "20%", "30%", "50%"], a: 2 },
+  { q: "The Farm to Fork Strategy is part of which initiative?",
+    opts: ["CAP reform", "European Green Deal", "Horizon Europe", "NextGenerationEU"], a: 1 },
+  { q: "CBAM stands for:",
+    opts: ["Carbon Border Adjustment Mechanism", "Clean Biofuel Allocation Method", "Circular Business Action Mandate", "Climate Budget Allocation Model"], a: 0 },
+  { q: "Which year is the EU's 'Fit for 55' package aligned with?",
+    opts: ["2025", "2030", "2040", "2050"], a: 1 },
+  { q: "The Renovation Wave aims to:",
+    opts: ["Modernize EU borders", "Double building renovation rates", "Rebuild coastlines", "Refurbish train networks"], a: 1 },
+  { q: "The Covenant of Mayors is coordinated with support of:",
+    opts: ["UN only", "The European Committee of the Regions", "WHO", "NATO"], a: 1 },
+  { q: "What is the main EU fund for climate-neutral cities?",
+    opts: ["LIFE Programme", "Cohesion Fund", "Horizon Europe Mission", "ESF+"], a: 2 },
+  { q: "Which EU institution represents local & regional authorities?",
+    opts: ["Council of Europe", "European Parliament", "Committee of the Regions", "Eurogroup"], a: 2 },
+];
+
+// LEVEL 3 — EPSO-style abstract reasoning
+const EPSO_QUESTIONS = [
+  { q: "Complete the sequence: 2, 4, 8, 16, ?", opts: ["20", "24", "32", "64"], a: 2 },
+  { q: "Complete the sequence: 3, 6, 12, 24, ?", opts: ["36", "48", "32", "28"], a: 1 },
+  { q: "Complete the sequence: 1, 1, 2, 3, 5, 8, ?", opts: ["11", "12", "13", "16"], a: 2 },
+  { q: "Complete the sequence: 100, 81, 64, 49, ?", opts: ["36", "25", "40", "42"], a: 0 },
+  { q: "Which number does NOT fit: 7, 14, 21, 29, 35?", opts: ["7", "14", "29", "35"], a: 2 },
+  { q: "Complete: A, C, F, J, ?", opts: ["N", "O", "M", "P"], a: 1 },
+  { q: "Complete: AZ, BY, CX, ?", opts: ["DW", "DV", "EW", "DE"], a: 0 },
+  { q: "If TODAY = 20250, what is YODAT?", opts: ["05202", "02502", "05022", "25020"], a: 0 },
+  { q: "Which word is the odd one out?", opts: ["Rome", "Paris", "Berlin", "Vienna"], a: 0,
+    _hint: "Three are capitals of EU founding members, one isn't" }, // actually all are EU capitals; let me fix
+  { q: "Pattern: 2→6, 3→12, 4→20, 5→?", opts: ["25", "30", "32", "28"], a: 1 },
+  { q: "Complete: 81, 27, 9, 3, ?", opts: ["0", "1", "2", "-3"], a: 1 },
+  { q: "Which does NOT belong: Circle, Triangle, Square, Pentagon, Hexagon?",
+    opts: ["Circle", "Triangle", "Square", "Pentagon"], a: 0 },
+  { q: "A is north of B. C is east of A. Where is C relative to B?",
+    opts: ["Northwest", "Southeast", "Northeast", "Southwest"], a: 2 },
+  { q: "Complete: 5, 11, 23, 47, ?", opts: ["71", "93", "95", "94"], a: 2 },
+  { q: "If all CoR members attend meetings, and Sylvia is a CoR member, then Sylvia:",
+    opts: ["Might attend meetings", "Attends meetings", "Does not attend", "Chairs the meeting"], a: 1 },
+  { q: "Complete: J, F, M, A, M, J, ?", opts: ["J", "A", "S", "O"], a: 0,
+    _hint: "Months of the year" },
+  { q: "Which is NOT a prime number?", opts: ["17", "23", "27", "29"], a: 2 },
+];
+
+// Fix the odd-one-out question — Rome, Paris, Berlin, Vienna — all are EU capitals, so rewrite
+EPSO_QUESTIONS[8] = {
+  q: "Which is the odd one out: Oslo, Paris, Berlin, Rome?",
+  opts: ["Oslo", "Paris", "Berlin", "Rome"], a: 0,
+  _hint: "Three are EU capitals, one isn't"
+};
+
+let currentChallenge = null; // { colleague, type }
+
+// ============ TEAMS (from CoR org chart) ============
+const TEAMS = [
+  { // Level 1 — Web team (Green Transition)
+    name: 'WEB Team',
+    priority: 'Green Transition',
+    emoji: '🌱',
+    members: ['Annika', 'Marios', 'Carmen', 'Jake', 'Mara', 'Amelia', 'Arnaud'],
+    theme: { sky1: '#A8D8A8', sky2: '#E8F5D8', ground: '#2a5a2a', platform: '#4a7a3a', accent: '#6b9a5a', grass: '#8bc34a' },
+  },
+  { // Level 2 — Social Media team (Territorial Cohesion)
+    name: 'Social Media Team',
+    priority: 'Territorial Cohesion',
+    emoji: '🤝',
+    members: ['Klaudia', 'Katrin', 'Benedetta', 'Sarah', 'Yannis', 'Betty'],
+    theme: { sky1: '#A8C8E8', sky2: '#E8F0F8', ground: '#2a3a5a', platform: '#4a5a7a', accent: '#6b7a9a', grass: '#80deea' },
+  },
+  { // Level 3 — Visual Communication team (Future of Europe)
+    name: 'Visual Communication Team',
+    priority: 'The Future of Europe',
+    emoji: '⭐',
+    members: ['Carole', 'Carlos', 'George', 'Blandine', 'Viktor', 'Valerie', 'Timothy', 'Gaia'],
+    theme: { sky1: '#4a5bcc', sky2: '#003399', ground: '#1a2a6a', platform: '#2a4a9a', accent: '#FFCC00', grass: '#FFCC00' },
+  },
+];
+
+// ============ SPRITE RENDERING ============
+function drawSprite(sprite, x, y, scale = 2, flip = false, overrideColors = null, targetCtx) {
+  const c = targetCtx || ctx;
+  for (let row = 0; row < sprite.length; row++) {
+    for (let col = 0; col < sprite[row].length; col++) {
+      const ch = sprite[row][col];
+      const color = overrideColors && overrideColors[ch] ? overrideColors[ch] : PAL[ch];
+      if (color) {
+        c.fillStyle = color;
+        const px = flip
+          ? x + (sprite[row].length - col - 1) * scale
+          : x + col * scale;
+        c.fillRect(px, y + row * scale, scale, scale);
+      }
+    }
+  }
+}
+
+// ============ GAME STATE ============
+const game = {
+  state: 'menu',
+  level: 0,
+  score: 0,
+  hp: 3,
+  stars: 0,
+  teamFreed: 0,
+  cameraX: 0,
+  time: 0,
+  flash: 0,
+};
+
+const player = {
+  x: 50, y: 300,
+  vx: 0, vy: 0,
+  w: 32, h: 40,
+  onGround: false,
+  facing: 1,
+  invuln: 0,
+  animTime: 0,
+};
+
+const input = { left: false, right: false, jump: false, jumpPressed: false };
+
+// ============ LEVELS ============
+function buildLevel(num) {
+  const team = TEAMS[num];
+  const length = 4000 + num * 800;
+  const platforms = [];
+  let gx = 0;
+  while (gx < length) {
+    const segW = 300 + Math.floor(Math.random() * 400);
+    platforms.push({ x: gx, y: H - 60, w: segW, h: 60, type: 'ground' });
+    const gap = 60 + Math.floor(Math.random() * 60);
+    gx += segW + gap;
+  }
+  for (let i = 0; i < 14 + num * 3; i++) {
+    const px = 300 + Math.random() * (length - 500);
+    const py = 180 + Math.random() * 180;
+    const pw = 80 + Math.random() * 100;
+    platforms.push({ x: px, y: py, w: pw, h: 20, type: 'platform' });
+  }
+
+  const enemies = [];
+  const enemyTypes = ['paper', 'phone', 'email'];
+  // Harder: more enemies, faster, wider patrols
+  const enemyCount = 14 + num * 6;
+  for (let i = 0; i < enemyCount; i++) {
+    const ex = 400 + Math.random() * (length - 600);
+    const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
+    const speedBoost = 1.2 + num * 0.3;
+    enemies.push({
+      x: ex, y: H - 60 - 28, w: 32, h: 28,
+      vx: (Math.random() < 0.5 ? -1 : 1) * (speedBoost + Math.random() * 0.8),
+      type, alive: true, animTime: 0,
+      patrolStart: ex - 90, patrolEnd: ex + 90,
+    });
+  }
+  // Add some flying enemies on floating platforms for levels 2 and 3
+  if (num >= 1) {
+    for (let i = 0; i < 4 + num * 2; i++) {
+      const ex = 500 + Math.random() * (length - 700);
+      const ey = 200 + Math.random() * 120;
+      enemies.push({
+        x: ex, y: ey, w: 32, h: 28,
+        vx: (Math.random() < 0.5 ? -1 : 1) * (1.5 + num * 0.3),
+        type: 'email', alive: true, animTime: 0,
+        patrolStart: ex - 120, patrolEnd: ex + 120,
+      });
+    }
+  }
+
+  const items = [];
+  // Signed forms
+  for (let i = 0; i < 12 + num * 2; i++) {
+    const ix = 200 + Math.random() * (length - 400);
+    const iy = 200 + Math.random() * 180;
+    items.push({ x: ix, y: iy, w: 24, h: 28, type: 'form', collected: false, animTime: Math.random() * Math.PI * 2 });
+  }
+  // EU Stars (12 per level — reference to EU flag)
+  for (let i = 0; i < 12; i++) {
+    const ix = 300 + (i / 12) * (length - 400) + Math.random() * 100;
+    const iy = 150 + Math.random() * 220;
+    items.push({ x: ix, y: iy, w: 28, h: 24, type: 'eustar', collected: false, animTime: Math.random() * Math.PI * 2 });
+  }
+  // Coffee — fewer in harder levels
+  const coffeeCount = Math.max(1, 3 - num);
+  for (let i = 0; i < coffeeCount; i++) {
+    const ix = 500 + Math.random() * (length - 800);
+    items.push({ x: ix, y: 240, w: 24, h: 28, type: 'coffee', collected: false, animTime: Math.random() * Math.PI * 2 });
+  }
+
+  // Colleagues in cages — spaced through the level
+  const colleagues = [];
+  const members = team.members;
+  for (let i = 0; i < members.length; i++) {
+    const cx = 500 + (i / members.length) * (length - 800) + (Math.random() * 100 - 50);
+    const cy = H - 60 - 48;
+    colleagues.push({
+      x: cx, y: cy, w: 32, h: 48,
+      name: members[i],
+      style: COLLEAGUE_STYLES[i % COLLEAGUE_STYLES.length],
+      freed: false,
+      followOffset: (i + 1) * 40,
+      animTime: 0,
+    });
+  }
+
+  const boss = { x: length - 100, y: H - 60 - 36, w: 24, h: 36, reached: false };
+
+  return { num, team, length, platforms, enemies, items, colleagues, boss };
+}
+
+let currentLevel = null;
+
+// ============ PHYSICS ============
+function rectIntersect(a, b) {
+  return a.x < b.x + b.w && a.x + a.w > b.x &&
+         a.y < b.y + b.h && a.y + a.h > b.y;
+}
+
+function updatePlayer() {
+  if (input.left) { player.vx = -MOVE_SPEED; player.facing = -1; }
+  else if (input.right) { player.vx = MOVE_SPEED; player.facing = 1; }
+  else { player.vx *= 0.75; if (Math.abs(player.vx) < 0.1) player.vx = 0; }
+
+  if ((input.jump || input.jumpPressed) && player.onGround) {
+    player.vy = JUMP_POWER;
+    player.onGround = false;
+    sfx(600, 0.1);
+  }
+  input.jumpPressed = false;
+
+  player.vy += GRAVITY;
+  if (player.vy > 14) player.vy = 14;
+
+  player.x += player.vx;
+  for (const p of currentLevel.platforms) {
+    if (rectIntersect(player, p)) {
+      if (player.vx > 0) player.x = p.x - player.w;
+      else if (player.vx < 0) player.x = p.x + p.w;
+      player.vx = 0;
+    }
+  }
+
+  player.y += player.vy;
+  player.onGround = false;
+  for (const p of currentLevel.platforms) {
+    if (rectIntersect(player, p)) {
+      if (player.vy > 0) {
+        player.y = p.y - player.h;
+        player.vy = 0;
+        player.onGround = true;
+      } else if (player.vy < 0) {
+        player.y = p.y + p.h;
+        player.vy = 0;
+      }
+    }
+  }
+
+  if (player.y > H + 100) {
+    hurtPlayer();
+    respawnPlayer();
+  }
+
+  if (player.x < 0) player.x = 0;
+  if (player.x + player.w > currentLevel.length) player.x = currentLevel.length - player.w;
+
+  if (player.invuln > 0) player.invuln--;
+  player.animTime++;
+}
+
+function respawnPlayer() {
+  let safeY = 300;
+  for (const p of currentLevel.platforms) {
+    if (p.type === 'ground' && p.x < player.x && p.x + p.w > player.x - 50) {
+      safeY = p.y - player.h;
+      break;
+    }
+  }
+  player.y = Math.max(0, safeY - 100);
+  player.vy = 0; player.vx = 0;
+  player.invuln = 120;
+}
+
+function hurtPlayer() {
+  if (player.invuln > 0) return;
+  game.hp--;
+  player.invuln = 100;
+  game.flash = 10;
+  sfx(200, 0.2);
+  if (game.hp <= 0) gameOver();
+}
+
+function updateEnemies() {
+  for (const e of currentLevel.enemies) {
+    if (!e.alive) continue;
+    e.x += e.vx;
+    e.animTime++;
+    if (e.x < e.patrolStart) { e.x = e.patrolStart; e.vx = Math.abs(e.vx); }
+    if (e.x + e.w > e.patrolEnd) { e.x = e.patrolEnd - e.w; e.vx = -Math.abs(e.vx); }
+    if (rectIntersect(player, e)) {
+      if (player.vy > 1 && player.y + player.h - 10 < e.y) {
+        e.alive = false;
+        player.vy = JUMP_POWER * 0.7;
+        game.score += 50;
+        sfx(800, 0.1);
+      } else {
+        hurtPlayer();
+      }
+    }
+  }
+}
+
+function updateItems() {
+  for (const it of currentLevel.items) {
+    if (it.collected) continue;
+    it.animTime += 0.08;
+    if (rectIntersect(player, it)) {
+      it.collected = true;
+      if (it.type === 'form') {
+        game.score += 100;
+        sfx(1200, 0.08);
+      } else if (it.type === 'coffee') {
+        game.hp = Math.min(5, game.hp + 1);
+        game.score += 50;
+        sfx(1000, 0.15);
+        setTimeout(() => sfx(1400, 0.15), 100);
+      } else if (it.type === 'eustar') {
+        game.score += 200;
+        game.stars++;
+        sfx(1600, 0.1);
+        setTimeout(() => sfx(2000, 0.1), 80);
+      }
+    }
+  }
+}
+
+function updateColleagues() {
+  for (const c of currentLevel.colleagues) {
+    c.animTime++;
+    if (c.freed) continue;
+    // Cooldown so we don't immediately re-trigger after a failed challenge
+    if (c.cooldown && c.cooldown > 0) { c.cooldown--; continue; }
+    if (rectIntersect(player, { x: c.x - 4, y: c.y - 4, w: c.w + 8, h: c.h + 8 })) {
+      triggerChallenge(c);
+      return; // Only one at a time
+    }
+  }
+}
+
+function triggerChallenge(colleague) {
+  if (currentChallenge) return;
+  currentChallenge = { colleague, type: ['quiz', 'simon', 'epso'][game.level] };
+  game.state = 'challenge';
+  if (currentChallenge.type === 'quiz') showQuizChallenge(colleague);
+  else if (currentChallenge.type === 'simon') showSimonChallenge(colleague);
+  else showEpsoChallenge(colleague);
+}
+
+function closeChallenge(success) {
+  const overlay = document.getElementById('challenge-overlay');
+  overlay.classList.add('hidden');
+  const col = currentChallenge ? currentChallenge.colleague : null;
+  currentChallenge = null;
+  game.state = 'playing';
+  if (col && success) {
+    col.freed = true;
+    game.teamFreed++;
+    game.score += 300;
+    showMessage(`🎉 ${col.name} freed!`, 1500);
+    sfx(900, 0.1);
+    setTimeout(() => sfx(1200, 0.1), 80);
+    setTimeout(() => sfx(1500, 0.15), 160);
+  } else if (col) {
+    col.cooldown = 120; // 2s cooldown before next attempt
+    showMessage(`❌ Wrong! Achim cackles...`, 1700);
+    hurtPlayer();
+    // bump player away
+    player.x = Math.max(0, player.x - 50 * player.facing);
+    sfx(140, 0.3);
+  }
+}
+
+// --- Taunt lines Achim throws at Sylvia ---
+const ACHIM_TAUNTS = [
+  "Fool! Only the worthy pass Achim's tests!",
+  "Answer, mortal, or your colleague rots in this cage!",
+  "I, Achim, Keeper of Paperwork, shall judge you!",
+  "Hehehe... try your luck, little assistant!",
+  "One wrong move and you join the paperasse!",
+  "Bureaucracy is my magic. Prove your worth!",
+];
+function pickTaunt() { return ACHIM_TAUNTS[Math.floor(Math.random() * ACHIM_TAUNTS.length)]; }
+
+// --- Level 1: Green Deal Quiz ---
+function showQuizChallenge(colleague) {
+  const q = GREEN_QUIZ[Math.floor(Math.random() * GREEN_QUIZ.length)];
+  const overlay = document.getElementById('challenge-overlay');
+  overlay.innerHTML = `
+    <div class="challenge-box">
+      <div class="achim-emoji">🧙‍♂️</div>
+      <div class="achim-header">ACHIM the Terrible</div>
+      <div class="achim-taunt">"${pickTaunt()}<br>Answer my riddle to free <b>${colleague.name}</b>!"</div>
+      <div class="challenge-prompt">${q.q}</div>
+      <div class="challenge-options">
+        ${q.opts.map((o, i) => `<button class="opt-btn" data-idx="${i}">${o}</button>`).join('')}
+      </div>
+    </div>`;
+  overlay.classList.remove('hidden');
+  overlay.querySelectorAll('.opt-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      const correct = idx === q.a;
+      btn.classList.add(correct ? 'correct' : 'wrong');
+      if (!correct) {
+        overlay.querySelectorAll('.opt-btn')[q.a].classList.add('correct');
+      }
+      sfx(correct ? 1200 : 200, 0.2);
+      setTimeout(() => closeChallenge(correct), 900);
+    }, { once: true });
+  });
+}
+
+// --- Level 2: Simon Says (color sequence memory puzzle) ---
+function showSimonChallenge(colleague) {
+  const seqLength = 3 + Math.min(game.teamFreed, 3); // 3 to 6
+  const sequence = [];
+  for (let i = 0; i < seqLength; i++) sequence.push(Math.floor(Math.random() * 4));
+  const overlay = document.getElementById('challenge-overlay');
+  overlay.innerHTML = `
+    <div class="challenge-box">
+      <div class="achim-emoji">🧙‍♂️</div>
+      <div class="achim-header">ACHIM the Terrible</div>
+      <div class="achim-taunt">"Watch and repeat my pattern, or <b>${colleague.name}</b> is MINE forever!"</div>
+      <div class="simon-grid">
+        <button class="simon-btn s0" data-idx="0" disabled></button>
+        <button class="simon-btn s1" data-idx="1" disabled></button>
+        <button class="simon-btn s2" data-idx="2" disabled></button>
+        <button class="simon-btn s3" data-idx="3" disabled></button>
+      </div>
+      <div class="simon-status" id="simon-status">👀 Watch carefully...</div>
+    </div>`;
+  overlay.classList.remove('hidden');
+
+  const btns = overlay.querySelectorAll('.simon-btn');
+  const freqs = [330, 440, 554, 660];
+
+  let playerInput = [];
+  function flash(idx, cb) {
+    if (idx >= sequence.length) { cb(); return; }
+    const b = btns[sequence[idx]];
+    b.classList.add('active');
+    sfx(freqs[sequence[idx]], 0.25);
+    setTimeout(() => {
+      b.classList.remove('active');
+      setTimeout(() => flash(idx + 1, cb), 220);
+    }, 420);
+  }
+
+  setTimeout(() => flash(0, () => {
+    document.getElementById('simon-status').textContent = '🎯 Now repeat the pattern!';
+    btns.forEach((btn) => {
+      btn.removeAttribute('disabled');
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.idx);
+        btn.classList.add('active');
+        sfx(freqs[idx], 0.2);
+        setTimeout(() => btn.classList.remove('active'), 200);
+        playerInput.push(idx);
+        if (playerInput[playerInput.length - 1] !== sequence[playerInput.length - 1]) {
+          btns.forEach(b => b.setAttribute('disabled', 'true'));
+          document.getElementById('simon-status').textContent = '💥 Wrong pattern!';
+          setTimeout(() => closeChallenge(false), 800);
+        } else if (playerInput.length === sequence.length) {
+          btns.forEach(b => b.setAttribute('disabled', 'true'));
+          document.getElementById('simon-status').textContent = '✨ Perfect!';
+          setTimeout(() => closeChallenge(true), 800);
+        }
+      });
+    });
+  }), 500);
+}
+
+// --- Level 3: EPSO-style abstract reasoning ---
+function showEpsoChallenge(colleague) {
+  const q = EPSO_QUESTIONS[Math.floor(Math.random() * EPSO_QUESTIONS.length)];
+  const overlay = document.getElementById('challenge-overlay');
+  overlay.innerHTML = `
+    <div class="challenge-box">
+      <div class="achim-emoji">🧙‍♂️</div>
+      <div class="achim-header">ACHIM the Terrible — EPSO Trial</div>
+      <div class="achim-taunt">"Abstract reasoning, mortal! Think like an EU civil servant,<br>or <b>${colleague.name}</b> is condemned to filing eternity!"</div>
+      <div class="challenge-prompt">${q.q}</div>
+      <div class="challenge-options">
+        ${q.opts.map((o, i) => `<button class="opt-btn" data-idx="${i}">${o}</button>`).join('')}
+      </div>
+    </div>`;
+  overlay.classList.remove('hidden');
+  overlay.querySelectorAll('.opt-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const idx = parseInt(btn.dataset.idx);
+      const correct = idx === q.a;
+      btn.classList.add(correct ? 'correct' : 'wrong');
+      if (!correct) {
+        overlay.querySelectorAll('.opt-btn')[q.a].classList.add('correct');
+      }
+      sfx(correct ? 1200 : 200, 0.2);
+      setTimeout(() => closeChallenge(correct), 1000);
+    }, { once: true });
+  });
+}
+
+function updateBoss() {
+  const b = currentLevel.boss;
+  const dist = Math.abs(player.x - b.x);
+  if (dist < 30 && !b.reached) {
+    b.reached = true;
+    nextLevel();
+  }
+}
+
+function nextLevel() {
+  game.level++;
+  if (game.level >= TEAMS.length) {
+    winGame();
+    return;
+  }
+  loadLevel(game.level);
+  const t = TEAMS[game.level];
+  showMessage(`${t.emoji} Level ${game.level + 1}: ${t.priority}`, 2500);
+}
+
+function loadLevel(num) {
+  currentLevel = buildLevel(num);
+  player.x = 50; player.y = 200;
+  player.vx = 0; player.vy = 0;
+  game.cameraX = 0;
+  const t = TEAMS[num];
+  document.getElementById('level').textContent = `${t.emoji} ${t.priority}`;
+}
+
+// ============ RENDERING ============
+function render() {
+  const t = currentLevel.team.theme;
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, H);
+  skyGrad.addColorStop(0, t.sky1);
+  skyGrad.addColorStop(1, t.sky2);
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // EU flag circle of stars in background (12 stars in a ring)
+  const ringCX = W / 2;
+  const ringCY = H / 2 - 40;
+  const ringR = 110;
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2 + game.time * 0.001;
+    const sx = ringCX + Math.cos(angle) * ringR - 10;
+    const sy = ringCY + Math.sin(angle) * ringR - 10;
+    drawSmallStar(sx, sy, 16, EU_GOLD);
+  }
+  ctx.restore();
+
+  // Twinkling background stars
+  ctx.save();
+  for (let i = 0; i < 40; i++) {
+    const sx = (i * 73 - game.cameraX * 0.15) % W;
+    const sy = (i * 41) % (H - 200);
+    const twinkle = (Math.sin(game.time * 0.05 + i) + 1) / 2;
+    ctx.globalAlpha = 0.3 + twinkle * 0.5;
+    ctx.fillStyle = EU_GOLD;
+    ctx.fillRect(sx < 0 ? sx + W : sx, sy, 2, 2);
+  }
+  ctx.restore();
+
+  // Parallax clouds
+  ctx.fillStyle = 'rgba(255,255,255,0.7)';
+  for (let i = 0; i < 6; i++) {
+    const cx = ((i * 260) - (game.cameraX * 0.2) % 260) % (W + 100);
+    const cy = 50 + (i % 3) * 30;
+    drawCloud(cx, cy);
+  }
+
+  // Distant buildings (EU style)
+  for (let i = 0; i < 20; i++) {
+    const bx = i * 120 - (game.cameraX * 0.4) % 120;
+    const bh = 80 + (i % 4) * 30;
+    ctx.fillStyle = 'rgba(0,30,90,0.4)';
+    ctx.fillRect(bx, H - 60 - bh, 80, bh);
+    ctx.fillStyle = 'rgba(255,204,0,0.3)';
+    for (let wy = 0; wy < bh - 20; wy += 20) {
+      for (let wx = 0; wx < 60; wx += 20) {
+        ctx.fillRect(bx + 10 + wx, H - 60 - bh + 10 + wy, 8, 10);
+      }
+    }
+    // EU flag on every 4th building
+    if (i % 4 === 0) {
+      ctx.fillStyle = EU_BLUE;
+      ctx.fillRect(bx + 36, H - 60 - bh - 24, 8, 16);
+      ctx.fillStyle = EU_GOLD;
+      ctx.fillRect(bx + 39, H - 60 - bh - 20, 2, 2);
+    }
+  }
+
+  ctx.save();
+  ctx.translate(-game.cameraX, 0);
+
+  // Platforms
+  for (const p of currentLevel.platforms) {
+    if (p.x + p.w < game.cameraX - 50 || p.x > game.cameraX + W + 50) continue;
+    ctx.fillStyle = t.platform;
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.fillStyle = t.accent;
+    ctx.fillRect(p.x, p.y, p.w, 4);
+    ctx.fillRect(p.x, p.y + p.h - 4, p.w, 4);
+    if (p.type === 'ground') {
+      ctx.fillStyle = t.grass;
+      for (let gx = 0; gx < p.w; gx += 8) {
+        ctx.fillRect(p.x + gx, p.y - 2, 4, 4);
+      }
+    }
+  }
+
+  // Collectibles
+  for (const it of currentLevel.items) {
+    if (it.collected) continue;
+    if (it.x + it.w < game.cameraX - 50 || it.x > game.cameraX + W + 50) continue;
+    const bob = Math.sin(it.animTime) * 3;
+    if (it.type === 'form') {
+      drawSprite(FORM, it.x, it.y + bob, 2);
+    } else if (it.type === 'coffee') {
+      drawSprite(COFFEE, it.x, it.y + bob, 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.4)';
+      ctx.fillRect(it.x + 10, it.y - 8 + bob, 2, 4);
+      ctx.fillRect(it.x + 14, it.y - 12 + bob, 2, 4);
+    } else if (it.type === 'eustar') {
+      // Draw EU star with glow
+      ctx.save();
+      const glowSize = 4 + Math.sin(it.animTime * 2) * 2;
+      ctx.shadowColor = EU_GOLD;
+      ctx.shadowBlur = glowSize * 2;
+      drawSprite(EU_STAR, it.x, it.y + bob, 2);
+      ctx.restore();
+    }
+  }
+
+  // Colleagues (in cages if not freed, following if freed)
+  for (const c of currentLevel.colleagues) {
+    if (c.x + c.w < game.cameraX - 100 || c.x > game.cameraX + W + 50) {
+      if (!c.freed) continue;
+    }
+    if (!c.freed) {
+      // Draw cage (bureau fermé)
+      ctx.fillStyle = PAL.q;
+      ctx.fillRect(c.x - 6, c.y - 6, c.w + 12, c.h + 12);
+      ctx.fillStyle = PAL.Q;
+      ctx.fillRect(c.x - 6, c.y - 6, c.w + 12, 4);
+      ctx.fillRect(c.x - 6, c.y + c.h + 2, c.w + 12, 4);
+      // Bars
+      ctx.fillStyle = '#8B7355';
+      for (let bx = 0; bx < c.w + 12; bx += 8) {
+        ctx.fillRect(c.x - 6 + bx, c.y - 6, 2, c.h + 12);
+      }
+      // Colleague inside (dimmed)
+      ctx.globalAlpha = 0.7;
+      drawSprite(COLLEAGUE_TPL, c.x, c.y, 2, false, c.style);
+      ctx.globalAlpha = 1;
+      // Lock
+      ctx.fillStyle = PAL.x;
+      ctx.fillRect(c.x + c.w/2 - 4, c.y + c.h - 4, 8, 6);
+      ctx.fillStyle = '#8B0000';
+      ctx.fillRect(c.x + c.w/2 - 3, c.y + c.h - 6, 6, 3);
+      // Name label
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 10px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(c.name, c.x + c.w/2 + 1, c.y - 10);
+      ctx.fillStyle = EU_GOLD;
+      ctx.fillText(c.name, c.x + c.w/2, c.y - 11);
+      ctx.textAlign = 'left';
+      // Achim the wizard standing guard next to the cage
+      const achimX = c.x + c.w + 12;
+      const achimY = c.y + c.h - 40;
+      const bob = Math.sin(c.animTime * 0.05) * 2;
+      drawSprite(ACHIM, achimX, achimY + bob, 2);
+      // "Achim" label
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 9px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText('ACHIM', achimX + 12, achimY - 4);
+      ctx.fillStyle = '#e0c0ff';
+      ctx.fillText('ACHIM', achimX + 12 - 1, achimY - 5);
+      ctx.textAlign = 'left';
+    } else {
+      // Freed: follow Sylvia with offset
+      const targetX = player.x - c.followOffset * player.facing;
+      c.x += (targetX - c.x) * 0.1;
+      const targetY = player.y;
+      c.y += (targetY - c.y) * 0.15;
+      const hop = Math.sin(c.animTime * 0.2) * 3;
+      drawSprite(COLLEAGUE_TPL, c.x, c.y + hop, 2, player.facing < 0, c.style);
+      // Name label small
+      ctx.fillStyle = EU_GOLD;
+      ctx.font = 'bold 9px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText(c.name, c.x + c.w/2, c.y - 4);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  // Enemies
+  for (const e of currentLevel.enemies) {
+    if (!e.alive) continue;
+    if (e.x + e.w < game.cameraX - 50 || e.x > game.cameraX + W + 50) continue;
+    const flip = e.vx > 0;
+    const wobble = Math.sin(e.animTime * 0.15) * 1;
+    if (e.type === 'paper') {
+      drawSprite(PAPER_ENEMY, e.x, e.y + wobble, 2, flip);
+    } else if (e.type === 'phone') {
+      drawSprite(PHONE_ENEMY, e.x, e.y + wobble, 2, flip);
+      if (Math.floor(e.animTime / 10) % 2 === 0) {
+        ctx.strokeStyle = 'rgba(255,200,0,0.6)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(e.x + e.w/2, e.y + e.h/2, 20 + Math.sin(e.animTime * 0.3) * 3, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    } else if (e.type === 'email') {
+      drawSprite(EMAIL_ENEMY, e.x, e.y + wobble, 2, flip);
+    }
+  }
+
+  // Boss
+  const b = currentLevel.boss;
+  if (b.x + b.w > game.cameraX - 50 && b.x < game.cameraX + W + 50) {
+    // Pedestal with EU flag
+    ctx.fillStyle = EU_BLUE;
+    ctx.fillRect(b.x - 14, b.y + b.h, 52, 12);
+    ctx.fillStyle = EU_GOLD;
+    for (let si = 0; si < 5; si++) {
+      ctx.fillRect(b.x - 10 + si * 10, b.y + b.h + 4, 4, 4);
+    }
+    drawSprite(FABRIZIO, b.x, b.y, 2);
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 14px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText('FABRIZIO', b.x + b.w/2, b.y - 10);
+    ctx.fillStyle = EU_GOLD;
+    ctx.fillText('FABRIZIO', b.x + b.w/2 - 1, b.y - 11);
+    ctx.textAlign = 'left';
+    // EU flag
+    const flagWave = Math.sin(game.time * 0.1) * 2;
+    ctx.fillStyle = EU_BLUE;
+    ctx.fillRect(b.x + b.w + 20, b.y - 24 + flagWave, 32, 22);
+    // 12 stars on flag mini
+    ctx.fillStyle = EU_GOLD;
+    for (let si = 0; si < 12; si++) {
+      const ang = (si / 12) * Math.PI * 2;
+      const fx = b.x + b.w + 36 + Math.cos(ang) * 8 + flagWave;
+      const fy = b.y - 13 + Math.sin(ang) * 6 + flagWave;
+      ctx.fillRect(fx, fy, 2, 2);
+    }
+  }
+
+  // Player
+  const sprite = player.onGround ? SYLVIA : SYLVIA_JUMP;
+  const shouldDraw = player.invuln === 0 || Math.floor(player.invuln / 5) % 2 === 0;
+  if (shouldDraw) {
+    drawSprite(sprite, player.x, player.y, 2, player.facing < 0);
+  }
+
+  ctx.restore();
+
+  if (game.flash > 0) {
+    ctx.fillStyle = `rgba(255, 0, 0, ${game.flash / 20})`;
+    ctx.fillRect(0, 0, W, H);
+    game.flash--;
+  }
+
+  // Progress bar
+  const progress = Math.min(1, player.x / currentLevel.length);
+  ctx.fillStyle = 'rgba(0,51,153,0.7)';
+  ctx.fillRect(W/2 - 100, 44, 200, 14);
+  ctx.fillStyle = EU_GOLD;
+  ctx.fillRect(W/2 - 98, 46, 196 * progress, 10);
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(W/2 - 100, 44, 200, 14);
+
+  // Message
+  if (messageText && messageUntil > Date.now()) {
+    ctx.fillStyle = 'rgba(0,51,153,0.9)';
+    ctx.fillRect(W/2 - 200, H/2 - 30, 400, 60);
+    ctx.strokeStyle = EU_GOLD;
+    ctx.lineWidth = 3;
+    ctx.strokeRect(W/2 - 200, H/2 - 30, 400, 60);
+    ctx.fillStyle = EU_GOLD;
+    ctx.font = 'bold 20px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText(messageText, W/2, H/2 + 6);
+    ctx.textAlign = 'left';
+  }
+}
+
+function drawSmallStar(x, y, size, color, targetCtx) {
+  const c = targetCtx || ctx;
+  c.fillStyle = color;
+  c.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    const r = i % 2 === 0 ? size / 2 : size / 5;
+    const px = x + size/2 + Math.cos(angle) * r;
+    const py = y + size/2 + Math.sin(angle) * r;
+    if (i === 0) c.moveTo(px, py);
+    else c.lineTo(px, py);
+  }
+  c.closePath();
+  c.fill();
+}
+
+function drawCloud(x, y) {
+  ctx.beginPath();
+  ctx.arc(x, y, 18, 0, Math.PI * 2);
+  ctx.arc(x + 20, y - 4, 22, 0, Math.PI * 2);
+  ctx.arc(x + 42, y, 18, 0, Math.PI * 2);
+  ctx.arc(x + 58, y + 2, 14, 0, Math.PI * 2);
+  ctx.fill();
+}
+
+// ============ MESSAGES ============
+let messageText = '';
+let messageUntil = 0;
+function showMessage(text, duration) {
+  messageText = text;
+  messageUntil = Date.now() + duration;
+}
+
+// ============ CAMERA ============
+function updateCamera() {
+  const targetX = player.x - W / 3;
+  game.cameraX += (targetX - game.cameraX) * 0.1;
+  if (game.cameraX < 0) game.cameraX = 0;
+  if (game.cameraX > currentLevel.length - W) game.cameraX = currentLevel.length - W;
+}
+
+// ============ MENU ART (intro screen) ============
+let menuArtCanvas = null;
+let menuArtCtx = null;
+let menuArtTime = 0;
+
+function initMenuArt() {
+  menuArtCanvas = document.getElementById('menu-art');
+  if (!menuArtCanvas) return;
+  menuArtCtx = menuArtCanvas.getContext('2d');
+  menuArtCtx.imageSmoothingEnabled = false;
+}
+
+function renderMenuArt() {
+  if (!menuArtCtx) return;
+  menuArtTime++;
+  const mc = menuArtCtx;
+  const w = menuArtCanvas.width;
+  const h = menuArtCanvas.height;
+
+  // Sky gradient
+  const grd = mc.createLinearGradient(0, 0, 0, h);
+  grd.addColorStop(0, '#1a1a6a');
+  grd.addColorStop(1, '#003399');
+  mc.fillStyle = grd;
+  mc.fillRect(0, 0, w, h);
+
+  // Twinkling stars background
+  for (let i = 0; i < 35; i++) {
+    const sx = (i * 73) % w;
+    const sy = (i * 37) % (h - 40);
+    const tw = (Math.sin(menuArtTime * 0.06 + i) + 1) / 2;
+    mc.globalAlpha = 0.2 + tw * 0.7;
+    mc.fillStyle = EU_GOLD;
+    mc.fillRect(sx, sy, 2, 2);
+  }
+  mc.globalAlpha = 1;
+
+  // EU 12-star ring rotating in background
+  mc.save();
+  mc.globalAlpha = 0.28;
+  const cx = w / 2;
+  const cy = h / 2 - 18;
+  const ringR = 72;
+  for (let i = 0; i < 12; i++) {
+    const a = (i / 12) * Math.PI * 2 + menuArtTime * 0.008;
+    const sx = cx + Math.cos(a) * ringR - 7;
+    const sy = cy + Math.sin(a) * ringR - 7;
+    drawSmallStar(sx, sy, 14, EU_GOLD, mc);
+  }
+  mc.restore();
+
+  // Ground
+  mc.fillStyle = '#4a7a3a';
+  mc.fillRect(0, h - 28, w, 28);
+  mc.fillStyle = '#8bc34a';
+  for (let gx = 0; gx < w; gx += 8) {
+    mc.fillRect(gx, h - 30, 4, 4);
+  }
+
+  // Sylvia on the left (idle bob)
+  const syBob = Math.sin(menuArtTime * 0.05) * 2;
+  drawSprite(SYLVIA, 55, h - 28 - 60 + syBob, 3, false, null, mc);
+
+  // Cage in the middle, with a dim colleague inside
+  const cageX = 215;
+  const cageY = h - 28 - 54;
+  const cageW = 50, cageH = 60;
+  mc.fillStyle = PAL.q;
+  mc.fillRect(cageX - 6, cageY - 6, cageW, cageH);
+  mc.fillStyle = PAL.Q;
+  mc.fillRect(cageX - 6, cageY - 6, cageW, 4);
+  mc.fillRect(cageX - 6, cageY + cageH - 10, cageW, 4);
+  mc.fillStyle = '#8B7355';
+  for (let bx = 0; bx < cageW; bx += 8) {
+    mc.fillRect(cageX - 6 + bx, cageY - 6, 2, cageH);
+  }
+  mc.globalAlpha = 0.55;
+  drawSprite(COLLEAGUE_TPL, cageX, cageY + 2, 2, false, COLLEAGUE_STYLES[1], mc);
+  mc.globalAlpha = 1;
+  // Lock
+  mc.fillStyle = '#ff0000';
+  mc.fillRect(cageX + 16, cageY + 44, 8, 6);
+  mc.fillStyle = '#8B0000';
+  mc.fillRect(cageX + 17, cageY + 42, 6, 3);
+  // "HELP!" label above cage
+  const helpBlink = Math.floor(menuArtTime / 30) % 2 === 0;
+  if (helpBlink) {
+    mc.fillStyle = '#000';
+    mc.font = 'bold 11px Courier New';
+    mc.textAlign = 'center';
+    mc.fillText('HELP!', cageX + 16, cageY - 10);
+    mc.fillStyle = EU_GOLD;
+    mc.fillText('HELP!', cageX + 15, cageY - 11);
+    mc.textAlign = 'left';
+  }
+
+  // Achim on the right (wobbling)
+  const achimWobble = Math.sin(menuArtTime * 0.04) * 3;
+  mc.save();
+  mc.translate(395, h - 28 - 60);
+  mc.rotate(achimWobble * Math.PI / 180);
+  drawSprite(ACHIM, 0, 0, 3, false, null, mc);
+  mc.restore();
+
+  // Achim speech bubble "MWAHAHA!"
+  const bubbleX = 350;
+  const bubbleY = 18;
+  mc.fillStyle = '#fff';
+  mc.fillRect(bubbleX, bubbleY, 115, 28);
+  mc.strokeStyle = '#000';
+  mc.lineWidth = 2;
+  mc.strokeRect(bubbleX, bubbleY, 115, 28);
+  mc.fillStyle = '#4a1a7a';
+  mc.font = 'bold 14px Courier New';
+  mc.textAlign = 'center';
+  mc.fillText('MWAHAHA!', bubbleX + 57, bubbleY + 19);
+  mc.textAlign = 'left';
+  // Bubble tail pointing down toward Achim
+  mc.fillStyle = '#fff';
+  mc.beginPath();
+  mc.moveTo(bubbleX + 85, bubbleY + 28);
+  mc.lineTo(bubbleX + 95, bubbleY + 45);
+  mc.lineTo(bubbleX + 105, bubbleY + 28);
+  mc.closePath();
+  mc.fill();
+  mc.strokeStyle = '#000';
+  mc.beginPath();
+  mc.moveTo(bubbleX + 85, bubbleY + 28);
+  mc.lineTo(bubbleX + 95, bubbleY + 45);
+  mc.lineTo(bubbleX + 105, bubbleY + 28);
+  mc.stroke();
+}
+
+// ============ GAME STATES ============
+function startGame() {
+  game.state = 'playing';
+  game.score = 0;
+  game.hp = 3;
+  game.stars = 0;
+  game.teamFreed = 0;
+  game.level = 0;
+  loadLevel(0);
+  document.getElementById('overlay').classList.add('hidden');
+  const t = TEAMS[0];
+  showMessage(`${t.emoji} Level 1: ${t.priority}`, 2500);
+  startMusic();
+}
+
+function gameOver() {
+  game.state = 'gameover';
+  stopMusic();
+  const overlay = document.getElementById('overlay');
+  overlay.innerHTML = `
+    <h1>💥 GAME OVER 💥</h1>
+    <h2>Sylvia was overwhelmed by paperwork!</h2>
+    <p>Final score: <span style="color:${EU_GOLD}">${game.score}</span> points</p>
+    <p>European stars: <span style="color:${EU_GOLD}">${game.stars}</span>/12</p>
+    <p>Colleagues freed: <span style="color:${EU_GOLD}">${game.teamFreed}</span></p>
+    <p>Level reached: <span style="color:${EU_GOLD}">${currentLevel.team.priority}</span></p>
+    <button class="btn" id="restartBtn">↻ RESTART</button>
+  `;
+  overlay.classList.remove('hidden');
+  document.getElementById('restartBtn').addEventListener('click', startGame);
+}
+
+function winGame() {
+  game.state = 'won';
+  playVictoryJingle();
+  const overlay = document.getElementById('overlay');
+  overlay.innerHTML = `
+    <h1><span class="eu-ring">⭐</span> EUROPEAN VICTORY! <span class="eu-ring">⭐</span></h1>
+    <h2>All teams have been freed!</h2>
+    <p>Sylvia has made it through the 3 main CoR priorities:<br>
+    🌱 Green Transition · 🤝 Territorial Cohesion · ⭐ The Future of Europe</p>
+    <p>Fabrizio is delighted. The WEB, Social Media and Visual Communication teams<br>
+    can resume their mission: building a Europe close to its citizens.</p>
+    <p style="margin-top:14px">⭐ European stars: <span style="color:${EU_GOLD}">${game.stars}</span>/36</p>
+    <p>👥 Colleagues freed: <span style="color:${EU_GOLD}">${game.teamFreed}</span></p>
+    <p style="margin-top:14px">Final score: <span style="color:${EU_GOLD};font-size:24px">${game.score}</span> points</p>
+    <p style="font-size:13px;margin-top:16px;color:#ccc">Thank you Sylvia for everything you do at the CoR! 💙⭐</p>
+    <button class="btn" id="restartBtn">↻ PLAY AGAIN</button>
+  `;
+  overlay.classList.remove('hidden');
+  document.getElementById('restartBtn').addEventListener('click', startGame);
+}
+
+// ============ AUDIO ============
+let audioCtx = null;
+function getAudio() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) { return null; }
+  }
+  return audioCtx;
+}
+
+function sfx(freq, duration) {
+  try {
+    const ac = getAudio();
+    if (!ac) return;
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.type = 'square';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.08, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(ac.destination);
+    osc.start();
+    osc.stop(ac.currentTime + duration);
+  } catch (e) {}
+}
+
+// Public-domain classical European melodies — simplified 8-bit arrangements
+const NOTE = {
+  C2: 65.41, G2: 98.00, A2: 110.00, B2: 123.47,
+  C3: 130.81, D3: 146.83, E3: 164.81, F3: 174.61, G3: 196.00, A3: 220.00, B3: 246.94,
+  C4: 261.63, D4: 293.66, E4: 329.63, F4: 349.23, G4: 392.00, A4: 440.00, B4: 493.88,
+  'F#4': 369.99, 'G#4': 415.30, 'A#4': 466.16,
+  C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00, B5: 987.77,
+  'D#5': 622.25,
+  C6: 1046.50, D6: 1174.66, E6: 1318.51, F6: 1396.91,
+};
+
+// 4 tracks that cycle one after another
+const TRACKS = [
+  {
+    name: 'Ode to Joy — Beethoven',
+    beat: 0.38,
+    melody: [
+      ['E5',1],['E5',1],['F5',1],['G5',1], ['G5',1],['F5',1],['E5',1],['D5',1],
+      ['C5',1],['C5',1],['D5',1],['E5',1], ['E5',1.5],['D5',0.5],['D5',2],
+      ['E5',1],['E5',1],['F5',1],['G5',1], ['G5',1],['F5',1],['E5',1],['D5',1],
+      ['C5',1],['C5',1],['D5',1],['E5',1], ['D5',1.5],['C5',0.5],['C5',2],
+    ],
+    bass: [
+      ['C3',2],['G3',2], ['C3',2],['G3',2], ['F3',2],['C3',2], ['G3',2],['G3',2],
+      ['C3',2],['G3',2], ['C3',2],['G3',2], ['F3',2],['C3',2], ['G3',2],['C3',2],
+    ],
+  },
+  {
+    name: 'Can-Can — Offenbach',
+    beat: 0.20,
+    melody: [
+      ['C5',0.5],['E5',0.5],['G5',0.5],['C6',0.5], ['C6',0.5],['G5',0.5],['E5',0.5],['C5',0.5],
+      ['D5',0.5],['F5',0.5],['A5',0.5],['C6',0.5], ['B5',0.5],['A5',0.5],['G5',0.5],['F5',0.5],
+      ['E5',0.5],['G5',0.5],['C6',1],            ['G5',0.5],['E5',0.5],['C5',1],
+      ['D5',0.5],['F5',0.5],['E5',0.5],['D5',0.5], ['C5',1],['G4',1],
+      ['C5',0.5],['E5',0.5],['G5',0.5],['C6',0.5], ['B5',0.5],['G5',0.5],['E5',0.5],['C5',0.5],
+      ['G5',0.5],['E5',0.5],['C5',0.5],['E5',0.5], ['D5',0.5],['B4',0.5],['G4',0.5],['G4',0.5],
+      ['C5',1],['C5',1], ['C5',2],
+    ],
+    bass: [
+      ['C3',1],['G3',1],['C3',1],['G3',1], ['F3',1],['C3',1],['G3',1],['G3',1],
+      ['C3',1],['G3',1],['C3',1],['G3',1], ['G3',1],['C3',1],
+      ['C3',1],['G3',1],['C3',1],['G3',1], ['G3',1],['G3',1],['C3',1],['C3',1],
+      ['C3',2],
+    ],
+  },
+  {
+    name: 'Für Elise — Beethoven',
+    beat: 0.30,
+    melody: [
+      ['E5',0.5],['D5',0.5],['E5',0.5],['D5',0.5], ['E5',0.5],['B4',0.5],['D5',0.5],['C5',0.5],
+      ['A4',1],['C4',0.5],['E4',0.5],['A4',1],    ['B4',1],['E4',0.5],['G#4',0.5],['B4',0.5],
+      ['C5',1.5],['E4',0.5],['E5',0.5],['D5',0.5],['E5',0.5],['D5',0.5],
+      ['E5',0.5],['B4',0.5],['D5',0.5],['C5',0.5], ['A4',1.5],
+      ['A4',0.5],['E4',0.5],['A4',0.5],['C5',0.5], ['B4',1],['E4',0.5],['A4',0.5],
+      ['C5',0.5],['B4',0.5],['A4',1.5],
+    ],
+    bass: [
+      ['A2',1.5],['A2',1.5], ['A2',1.5],['E3',1.5],
+      ['A2',1.5],['A2',1.5], ['A2',1.5],['E3',1.5],
+      ['A2',1.5],['A2',1.5], ['E3',1.5],['A2',1.5],
+      ['A2',1.5],['A2',1.5],
+    ],
+  },
+  {
+    name: 'Hall of the Mountain King — Grieg',
+    beat: 0.22,
+    melody: [
+      ['B3',0.5],['C4',0.5],['D4',0.5],['E4',0.5], ['F4',0.5],['D4',0.5],['F4',1],
+      ['E4',0.5],['C4',0.5],['E4',1],             ['B3',0.5],['C4',0.5],['D4',0.5],['E4',0.5],
+      ['F4',0.5],['D4',0.5],['F4',0.5],['B4',0.5], ['A4',0.5],['F4',0.5],['A4',1],
+      ['B4',0.5],['A4',0.5],['F4',0.5],['A4',0.5], ['B4',0.5],['C5',0.5],['B4',0.5],['A4',0.5],
+      ['F4',0.5],['A4',0.5],['E4',0.5],['A4',0.5], ['D4',0.5],['A4',0.5],['C4',0.5],['A4',0.5],
+      ['B3',2],
+    ],
+    bass: [
+      ['E3',2],['E3',2], ['E3',2],['E3',2],
+      ['A3',2],['A3',2], ['A3',2],['A3',2],
+      ['E3',2],['E3',2],
+    ],
+  },
+];
+
+let musicPlaying = false;
+let musicEnabled = true;
+let nextNoteTime = 0;
+let currentTrackIdx = 0;
+let melodyIdx = 0;
+let bassIdx = 0;
+let bassTimeAcc = 0;
+let musicGain = null;
+let musicVolume = 0.22;
+
+function getMusicGain() {
+  const ac = getAudio();
+  if (!ac) return null;
+  if (!musicGain) {
+    musicGain = ac.createGain();
+    musicGain.gain.value = musicVolume;
+    musicGain.connect(ac.destination);
+  }
+  return musicGain;
+}
+
+function scheduleNote(freq, startTime, duration, gain = 0.06, type = 'square', throughMusic = false) {
+  const ac = getAudio();
+  if (!ac) return;
+  const osc = ac.createOscillator();
+  const g = ac.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  g.gain.setValueAtTime(0, startTime);
+  g.gain.linearRampToValueAtTime(gain, startTime + 0.01);
+  g.gain.setValueAtTime(gain, startTime + duration * 0.8);
+  g.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+  osc.connect(g);
+  if (throughMusic) {
+    const mg = getMusicGain();
+    g.connect(mg || ac.destination);
+  } else {
+    g.connect(ac.destination);
+  }
+  osc.start(startTime);
+  osc.stop(startTime + duration + 0.05);
+}
+
+function showTrackLabel(name) {
+  const el = document.getElementById('music-track');
+  el.textContent = '🎵 ' + name;
+  el.classList.add('show');
+  clearTimeout(showTrackLabel._t);
+  showTrackLabel._t = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+function startMusic() {
+  if (!musicEnabled) return;
+  const ac = getAudio();
+  if (!ac) return;
+  if (musicPlaying) return;
+  musicPlaying = true;
+  nextNoteTime = ac.currentTime + 0.1;
+  melodyIdx = 0;
+  bassIdx = 0;
+  bassTimeAcc = 0;
+  showTrackLabel(TRACKS[currentTrackIdx].name);
+  scheduleMusic();
+}
+
+function stopMusic() {
+  musicPlaying = false;
+}
+
+function scheduleMusic() {
+  if (!musicPlaying) return;
+  const ac = getAudio();
+  if (!ac) return;
+  const track = TRACKS[currentTrackIdx];
+  // Schedule up to 1 second ahead
+  while (nextNoteTime < ac.currentTime + 1.0) {
+    const [noteName, dur] = track.melody[melodyIdx];
+    const duration = dur * track.beat;
+    const f = NOTE[noteName];
+    if (f) scheduleNote(f, nextNoteTime, duration * 0.95, 0.06, 'square', true);
+
+    // Bass runs in parallel
+    if (bassTimeAcc <= 0.001) {
+      const [bNoteName, bDur] = track.bass[bassIdx];
+      const bDuration = bDur * track.beat;
+      const bf = NOTE[bNoteName];
+      if (bf) scheduleNote(bf, nextNoteTime, bDuration * 0.9, 0.05, 'triangle', true);
+      bassTimeAcc = bDuration;
+      bassIdx = (bassIdx + 1) % track.bass.length;
+    }
+    bassTimeAcc -= duration;
+
+    nextNoteTime += duration;
+    melodyIdx++;
+    // End of track loop → advance to next track
+    if (melodyIdx >= track.melody.length) {
+      melodyIdx = 0;
+      bassIdx = 0;
+      bassTimeAcc = 0;
+      currentTrackIdx = (currentTrackIdx + 1) % TRACKS.length;
+      // small gap between tracks
+      nextNoteTime += 0.4;
+      showTrackLabel(TRACKS[currentTrackIdx].name);
+      return setTimeout(scheduleMusic, 300);
+    }
+  }
+  setTimeout(scheduleMusic, 200);
+}
+
+function playVictoryJingle() {
+  const ac = getAudio();
+  if (!ac) return;
+  const seq = [
+    ['C5', 0.15], ['E5', 0.15], ['G5', 0.15], ['C5', 0.3],
+    ['C5', 0.15], ['E5', 0.15], ['G5', 0.15], ['C5', 0.6],
+  ];
+  let t = ac.currentTime;
+  for (const [n, d] of seq) {
+    scheduleNote(NOTE[n], t, d, 0.1, 'square');
+    t += d;
+  }
+}
+
+document.getElementById('music-toggle').addEventListener('click', () => {
+  musicEnabled = !musicEnabled;
+  document.getElementById('music-toggle').textContent = musicEnabled ? '♪ ON' : '♪ OFF';
+  if (musicEnabled && game.state === 'playing') startMusic();
+  else stopMusic();
+});
+
+document.getElementById('music-volume').addEventListener('input', (e) => {
+  musicVolume = parseInt(e.target.value, 10) / 100;
+  const mg = getMusicGain();
+  if (mg) mg.gain.value = musicVolume;
+});
+
+// ============ INPUT ============
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') input.left = true;
+  if (e.key === 'ArrowRight' || e.key === 'd') input.right = true;
+  if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') {
+    if (!input.jump) input.jumpPressed = true;
+    input.jump = true;
+    e.preventDefault();
+  }
+});
+document.addEventListener('keyup', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') input.left = false;
+  if (e.key === 'ArrowRight' || e.key === 'd') input.right = false;
+  if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') input.jump = false;
+});
+
+function bindTouch(id, onDown, onUp) {
+  const el = document.getElementById(id);
+  el.addEventListener('touchstart', (e) => { e.preventDefault(); onDown(); }, { passive: false });
+  el.addEventListener('touchend', (e) => { e.preventDefault(); onUp(); }, { passive: false });
+  el.addEventListener('touchcancel', (e) => { e.preventDefault(); onUp(); }, { passive: false });
+  el.addEventListener('mousedown', (e) => { e.preventDefault(); onDown(); });
+  el.addEventListener('mouseup', (e) => { e.preventDefault(); onUp(); });
+  el.addEventListener('mouseleave', () => onUp());
+}
+bindTouch('btnLeft',  () => input.left = true,  () => input.left = false);
+bindTouch('btnRight', () => input.right = true, () => input.right = false);
+bindTouch('btnJump',  () => { input.jump = true; input.jumpPressed = true; }, () => input.jump = false);
+
+// ============ RESPONSIVE CANVAS ============
+function resize() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const ratio = W / H;
+  let cw = vw;
+  let ch = vw / ratio;
+  if (ch > vh) {
+    ch = vh;
+    cw = vh * ratio;
+  }
+  canvas.style.width = cw + 'px';
+  canvas.style.height = ch + 'px';
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ============ GAME LOOP ============
+function loop() {
+  game.time++;
+  if (game.state === 'playing') {
+    updatePlayer();
+    updateEnemies();
+    updateItems();
+    updateColleagues();
+    updateBoss();
+    updateCamera();
+    render();
+  } else if (game.state === 'challenge') {
+    // Freeze gameplay but keep scene rendered underneath
+    render();
+  } else if (game.state === 'menu') {
+    renderMenuArt();
+    document.getElementById('hp').textContent = game.hp;
+    document.getElementById('score').textContent = game.score;
+    document.getElementById('stars').textContent = game.stars;
+    document.getElementById('team').textContent = game.teamFreed;
+  }
+  requestAnimationFrame(loop);
+}
+
+// Intro step navigation
+document.getElementById('nextBtn').addEventListener('click', () => {
+  getAudio(); // trigger user gesture early
+  document.getElementById('intro-step-1').classList.add('hidden');
+  document.getElementById('intro-step-2').classList.remove('hidden');
+});
+document.getElementById('backBtn').addEventListener('click', () => {
+  document.getElementById('intro-step-2').classList.add('hidden');
+  document.getElementById('intro-step-1').classList.remove('hidden');
+});
+document.getElementById('startBtn').addEventListener('click', () => {
+  getAudio();
+  startGame();
+});
+
+loadLevel(0);
+initMenuArt();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
