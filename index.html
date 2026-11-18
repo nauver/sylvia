@@ -393,7 +393,7 @@
 <div id="wrap">
   <canvas id="gameCanvas" width="800" height="480"></canvas>
   <div id="hud">
-    <div class="hud-item">❤️ <span id="hp">3</span></div>
+    <div class="hud-item"><span id="hp">❤️❤️❤️</span></div>
     <div class="hud-item">📋 <span id="score">0</span></div>
     <div class="hud-item">⭐ <span id="stars">0</span>/12</div>
     <div class="hud-item">👥 <span id="team">0</span> freed</div>
@@ -457,7 +457,19 @@
         </div>
       </div>
 
-      <button class="btn" id="startBtn">▶ START THE ADVENTURE</button>
+      <div class="rules-section" style="background:rgba(255,204,0,0.1);border:2px solid #FFCC00;border-radius:6px;padding:10px 14px">
+        <h3>🎮 PICK A MODE</h3>
+        <div class="instructions" style="font-size:13px">
+          <b style="color:#FFCC00">SOLO</b>: Only Sylvia (arrows / space)<br>
+          <b style="color:#ffa860">CO-OP</b>: Sylvia + Luca on the same keyboard · help each other<br>
+          <span style="font-size:11px;color:#ccc">In co-op: shared lives · both must stand near a cage to trigger Achim · both must reach Fabrizio · you can jump on each other's head!</span>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:8px">
+        <button class="btn" id="startBtn">▶ START SOLO</button>
+        <button class="btn" id="startCoopBtn" style="background:#ffa860;color:#3a1a05">▶ START CO-OP (2P)</button>
+      </div>
       <button class="btn" id="backBtn" style="background:transparent;color:#FFCC00;border-color:#FFCC00;box-shadow:none;margin-top:8px;font-size:14px;padding:8px 18px">◀ Back</button>
     </div>
   </div>
@@ -855,6 +867,7 @@ function drawSprite(sprite, x, y, scale = 2, flip = false, overrideColors = null
 // ============ GAME STATE ============
 const game = {
   state: 'menu',
+  mode: 'solo', // 'solo' or 'coop'
   level: 0,
   score: 0,
   hp: 3,
@@ -873,9 +886,33 @@ const player = {
   facing: 1,
   invuln: 0,
   animTime: 0,
+  name: 'Sylvia',
+};
+
+// Player 2 (Luca) — active only in co-op mode
+const player2 = {
+  x: 90, y: 300,
+  vx: 0, vy: 0,
+  w: 32, h: 40,
+  onGround: false,
+  facing: 1,
+  invuln: 0,
+  animTime: 0,
+  name: 'Luca',
+  active: false,
+};
+
+// Luca's color overrides (red hair, orange top, brown pants)
+const LUCA_COLORS = {
+  h: '#8b3a1a', // red-brown hair
+  H: '#5a2510',
+  e: '#d4701a', // orange top
+  E: '#8b4510',
+  f: '#4a2a1a', // brown pants
 };
 
 const input = { left: false, right: false, jump: false, jumpPressed: false };
+const input2 = { left: false, right: false, jump: false, jumpPressed: false };
 
 // ============ LEVELS ============
 function buildLevel(num) {
@@ -890,7 +927,7 @@ function buildLevel(num) {
     const segW = 380 + Math.floor(Math.random() * 300);
     platforms.push({ x: gx, y: H - 60, w: segW, h: 60, type: 'ground' });
     groundSegments.push({ x: gx, w: segW });
-    const gap = 35 + Math.floor(Math.random() * 35); // smaller, friendlier gaps
+    const gap = 20 + Math.floor(Math.random() * 20); // narrow, very friendly gaps (20-40px)
     gx += segW + gap;
   }
 
@@ -949,11 +986,43 @@ function buildLevel(num) {
     const iy = 300 + Math.random() * 90; // 300..390, easily jumpable
     items.push({ x: ix, y: iy, w: 24, h: 28, type: 'form', collected: false, animTime: Math.random() * Math.PI * 2 });
   }
-  // EU Stars (12 per level — reference to EU flag), also reachable
+  // EU Stars (12 per level — reference to EU flag)
+  // Each star placed above a ground segment, not overlapping any floating platform,
+  // not too close to Fabrizio, at a reachable height
+  const floatingPlatforms = platforms.filter(p => p.type === 'platform');
   for (let i = 0; i < 12; i++) {
-    const ix = 300 + (i / 12) * (length - 400) + Math.random() * 100;
-    const iy = 270 + Math.random() * 110; // 270..380, reachable from ground or platforms
-    items.push({ x: ix, y: iy, w: 28, h: 24, type: 'eustar', collected: false, animTime: Math.random() * Math.PI * 2 });
+    let placed = false;
+    for (let attempt = 0; attempt < 30 && !placed; attempt++) {
+      // Spread stars along the level
+      const bandStart = (i / 12) * length;
+      const bandEnd = ((i + 1) / 12) * length;
+      // Find a ground segment within this band
+      const candidates = groundSegments.filter(s =>
+        s.x + s.w > bandStart + 60 && s.x < bandEnd - 60 && s.w >= 120);
+      if (!candidates.length) continue;
+      const seg = candidates[Math.floor(Math.random() * candidates.length)];
+      const minX = Math.max(seg.x + 50, bandStart);
+      const maxX = Math.min(seg.x + seg.w - 80, bandEnd, length - 180);
+      if (maxX <= minX) continue;
+      const ix = minX + Math.random() * (maxX - minX);
+      const iy = 290 + Math.random() * 90; // 290..380, well within jump reach
+      // Check it does not overlap any floating platform
+      const overlaps = floatingPlatforms.some(p =>
+        ix < p.x + p.w + 12 && ix + 28 > p.x - 12 &&
+        iy < p.y + p.h + 12 && iy + 24 > p.y - 12);
+      if (overlaps) continue;
+      items.push({ x: ix, y: iy, w: 28, h: 24, type: 'eustar', collected: false, animTime: Math.random() * Math.PI * 2 });
+      placed = true;
+    }
+    if (!placed) {
+      // Guaranteed fallback: drop it on the first big ground segment, low enough to walk into
+      const seg = groundSegments.find(s => s.w >= 150) || groundSegments[0];
+      items.push({
+        x: seg.x + 60 + (i * 30) % Math.max(60, seg.w - 120),
+        y: 340, w: 28, h: 24, type: 'eustar', collected: false,
+        animTime: Math.random() * Math.PI * 2
+      });
+    }
   }
   // Coffee — more generous
   const coffeeCount = 4;
@@ -991,77 +1060,114 @@ function rectIntersect(a, b) {
          a.y < b.y + b.h && a.y + a.h > b.y;
 }
 
-function updatePlayer() {
-  if (input.left) { player.vx = -MOVE_SPEED; player.facing = -1; }
-  else if (input.right) { player.vx = MOVE_SPEED; player.facing = 1; }
-  else { player.vx *= 0.75; if (Math.abs(player.vx) < 0.1) player.vx = 0; }
+function updateEntity(ent, inp) {
+  if (inp.left) { ent.vx = -MOVE_SPEED; ent.facing = -1; }
+  else if (inp.right) { ent.vx = MOVE_SPEED; ent.facing = 1; }
+  else { ent.vx *= 0.75; if (Math.abs(ent.vx) < 0.1) ent.vx = 0; }
 
-  if ((input.jump || input.jumpPressed) && player.onGround) {
-    player.vy = JUMP_POWER;
-    player.onGround = false;
+  if ((inp.jump || inp.jumpPressed) && ent.onGround) {
+    ent.vy = JUMP_POWER;
+    ent.onGround = false;
     sfx(600, 0.1);
   }
-  input.jumpPressed = false;
+  inp.jumpPressed = false;
 
-  player.vy += GRAVITY;
-  if (player.vy > 14) player.vy = 14;
+  ent.vy += GRAVITY;
+  if (ent.vy > 14) ent.vy = 14;
 
-  player.x += player.vx;
+  // Horizontal move + platform collisions
+  ent.x += ent.vx;
   for (const p of currentLevel.platforms) {
-    if (rectIntersect(player, p)) {
-      if (player.vx > 0) player.x = p.x - player.w;
-      else if (player.vx < 0) player.x = p.x + p.w;
-      player.vx = 0;
+    if (rectIntersect(ent, p)) {
+      if (ent.vx > 0) ent.x = p.x - ent.w;
+      else if (ent.vx < 0) ent.x = p.x + p.w;
+      ent.vx = 0;
+    }
+  }
+  // Horizontal collision with the other player (co-op)
+  if (game.mode === 'coop') {
+    const other = ent === player ? player2 : player;
+    if (rectIntersect(ent, other)) {
+      if (ent.vx > 0) ent.x = other.x - ent.w;
+      else if (ent.vx < 0) ent.x = other.x + other.w;
+      ent.vx = 0;
     }
   }
 
-  player.y += player.vy;
-  player.onGround = false;
+  // Vertical move + platform collisions
+  ent.y += ent.vy;
+  ent.onGround = false;
   for (const p of currentLevel.platforms) {
-    if (rectIntersect(player, p)) {
-      if (player.vy > 0) {
-        player.y = p.y - player.h;
-        player.vy = 0;
-        player.onGround = true;
-      } else if (player.vy < 0) {
-        player.y = p.y + p.h;
-        player.vy = 0;
+    if (rectIntersect(ent, p)) {
+      if (ent.vy > 0) {
+        ent.y = p.y - ent.h;
+        ent.vy = 0;
+        ent.onGround = true;
+      } else if (ent.vy < 0) {
+        ent.y = p.y + p.h;
+        ent.vy = 0;
+      }
+    }
+  }
+  // Stand on the other player (co-entraide!)
+  if (game.mode === 'coop') {
+    const other = ent === player ? player2 : player;
+    if (rectIntersect(ent, other)) {
+      if (ent.vy > 0) {
+        ent.y = other.y - ent.h;
+        ent.vy = 0;
+        ent.onGround = true;
+      } else if (ent.vy < 0) {
+        ent.y = other.y + other.h;
+        ent.vy = 0;
       }
     }
   }
 
-  if (player.y > H + 100) {
-    hurtPlayer();
-    respawnPlayer();
+  if (ent.y > H + 100) {
+    hurtEntity(ent);
+    respawnEntity(ent);
   }
 
-  if (player.x < 0) player.x = 0;
-  if (player.x + player.w > currentLevel.length) player.x = currentLevel.length - player.w;
+  if (ent.x < 0) ent.x = 0;
+  if (ent.x + ent.w > currentLevel.length) ent.x = currentLevel.length - ent.w;
 
-  if (player.invuln > 0) player.invuln--;
-  player.animTime++;
+  if (ent.invuln > 0) ent.invuln--;
+  ent.animTime++;
 }
 
-function respawnPlayer() {
+function updatePlayer() {
+  updateEntity(player, input);
+  if (game.mode === 'coop') updateEntity(player2, input2);
+}
+
+function respawnEntity(ent) {
   let safeY = 300;
   for (const p of currentLevel.platforms) {
-    if (p.type === 'ground' && p.x < player.x && p.x + p.w > player.x - 50) {
-      safeY = p.y - player.h;
+    if (p.type === 'ground' && p.x < ent.x && p.x + p.w > ent.x - 50) {
+      safeY = p.y - ent.h;
       break;
     }
   }
-  player.y = Math.max(0, safeY - 100);
-  player.vy = 0; player.vx = 0;
-  player.invuln = 120;
+  ent.y = Math.max(0, safeY - 100);
+  ent.vy = 0; ent.vx = 0;
+  ent.invuln = 120;
 }
 
-function hurtPlayer() {
-  if (player.invuln > 0) return;
+function hurtEntity(ent) {
+  if (ent.invuln > 0) return;
   game.hp--;
-  player.invuln = 100;
+  ent.invuln = 100;
   game.flash = 10;
   sfx(200, 0.2);
   if (game.hp <= 0) gameOver();
+}
+
+// Back-compat alias (used in older call sites — keep name)
+function hurtPlayer() { hurtEntity(player); }
+
+function playersActive() {
+  return game.mode === 'coop' ? [player, player2] : [player];
 }
 
 function updateEnemies() {
@@ -1071,14 +1177,18 @@ function updateEnemies() {
     e.animTime++;
     if (e.x < e.patrolStart) { e.x = e.patrolStart; e.vx = Math.abs(e.vx); }
     if (e.x + e.w > e.patrolEnd) { e.x = e.patrolEnd - e.w; e.vx = -Math.abs(e.vx); }
-    if (rectIntersect(player, e)) {
-      if (player.vy > 1 && player.y + player.h - 10 < e.y) {
-        e.alive = false;
-        player.vy = JUMP_POWER * 0.7;
-        game.score += 50;
-        sfx(800, 0.1);
-      } else {
-        hurtPlayer();
+    for (const p of playersActive()) {
+      if (rectIntersect(p, e)) {
+        if (p.vy > 1 && p.y + p.h - 10 < e.y) {
+          e.alive = false;
+          p.vy = JUMP_POWER * 0.7;
+          game.score += 50;
+          sfx(800, 0.1);
+          break;
+        } else {
+          hurtEntity(p);
+          break;
+        }
       }
     }
   }
@@ -1088,22 +1198,25 @@ function updateItems() {
   for (const it of currentLevel.items) {
     if (it.collected) continue;
     it.animTime += 0.08;
-    if (rectIntersect(player, it)) {
-      it.collected = true;
-      if (it.type === 'form') {
-        game.score += 100;
-        sfx(1200, 0.08);
-      } else if (it.type === 'coffee') {
-        game.hp = Math.min(5, game.hp + 1);
-        game.score += 50;
-        sfx(1000, 0.15);
-        setTimeout(() => sfx(1400, 0.15), 100);
-      } else if (it.type === 'eustar') {
-        game.score += 200;
-        game.stars++;
-        sfx(1600, 0.1);
-        setTimeout(() => sfx(2000, 0.1), 80);
-      }
+    let collector = null;
+    for (const p of playersActive()) {
+      if (rectIntersect(p, it)) { collector = p; break; }
+    }
+    if (!collector) continue;
+    it.collected = true;
+    if (it.type === 'form') {
+      game.score += 100;
+      sfx(1200, 0.08);
+    } else if (it.type === 'coffee') {
+      game.hp = Math.min(5, game.hp + 1);
+      game.score += 50;
+      sfx(1000, 0.15);
+      setTimeout(() => sfx(1400, 0.15), 100);
+    } else if (it.type === 'eustar') {
+      game.score += 200;
+      game.stars++;
+      sfx(1600, 0.1);
+      setTimeout(() => sfx(2000, 0.1), 80);
     }
   }
 }
@@ -1112,11 +1225,21 @@ function updateColleagues() {
   for (const c of currentLevel.colleagues) {
     c.animTime++;
     if (c.freed) continue;
-    // Cooldown so we don't immediately re-trigger after a failed challenge
     if (c.cooldown && c.cooldown > 0) { c.cooldown--; continue; }
-    if (rectIntersect(player, { x: c.x - 4, y: c.y - 4, w: c.w + 8, h: c.h + 8 })) {
-      triggerChallenge(c);
-      return; // Only one at a time
+    const zone = { x: c.x - 4, y: c.y - 4, w: c.w + 8, h: c.h + 8 };
+    if (game.mode === 'coop') {
+      // Co-entraide: BOTH players must stand near the cage together
+      const p1Near = rectIntersect(player, { x: c.x - 40, y: c.y - 20, w: c.w + 80, h: c.h + 40 });
+      const p2Near = rectIntersect(player2, { x: c.x - 40, y: c.y - 20, w: c.w + 80, h: c.h + 40 });
+      if (p1Near && p2Near) {
+        triggerChallenge(c);
+        return;
+      }
+    } else {
+      if (rectIntersect(player, zone)) {
+        triggerChallenge(c);
+        return;
+      }
     }
   }
 }
@@ -1285,10 +1408,18 @@ function showEpsoChallenge(colleague) {
 
 function updateBoss() {
   const b = currentLevel.boss;
-  const dist = Math.abs(player.x - b.x);
-  if (dist < 30 && !b.reached) {
-    b.reached = true;
-    nextLevel();
+  const d1 = Math.abs(player.x - b.x);
+  if (game.mode === 'coop') {
+    const d2 = Math.abs(player2.x - b.x);
+    if (d1 < 50 && d2 < 80 && !b.reached) {
+      b.reached = true;
+      nextLevel();
+    }
+  } else {
+    if (d1 < 30 && !b.reached) {
+      b.reached = true;
+      nextLevel();
+    }
   }
 }
 
@@ -1307,6 +1438,10 @@ function loadLevel(num) {
   currentLevel = buildLevel(num);
   player.x = 50; player.y = 200;
   player.vx = 0; player.vy = 0;
+  if (game.mode === 'coop') {
+    player2.x = 100; player2.y = 200;
+    player2.vx = 0; player2.vy = 0;
+  }
   game.cameraX = 0;
   const t = TEAMS[num];
   document.getElementById('level').textContent = `${t.emoji} ${t.priority}`;
@@ -1536,11 +1671,37 @@ function render() {
     }
   }
 
-  // Player
-  const sprite = player.onGround ? SYLVIA : SYLVIA_JUMP;
-  const shouldDraw = player.invuln === 0 || Math.floor(player.invuln / 5) % 2 === 0;
-  if (shouldDraw) {
-    drawSprite(sprite, player.x, player.y, 2, player.facing < 0);
+  // Player 1 (Sylvia)
+  const sprite1 = player.onGround ? SYLVIA : SYLVIA_JUMP;
+  const draw1 = player.invuln === 0 || Math.floor(player.invuln / 5) % 2 === 0;
+  if (draw1) {
+    drawSprite(sprite1, player.x, player.y, 2, player.facing < 0);
+    // "P1" tag above head in coop
+    if (game.mode === 'coop') {
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 9px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText('SYLVIA', player.x + player.w/2 + 1, player.y - 4);
+      ctx.fillStyle = EU_GOLD;
+      ctx.fillText('SYLVIA', player.x + player.w/2, player.y - 5);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  // Player 2 (Luca) — co-op only
+  if (game.mode === 'coop') {
+    const sprite2 = player2.onGround ? SYLVIA : SYLVIA_JUMP;
+    const draw2 = player2.invuln === 0 || Math.floor(player2.invuln / 5) % 2 === 0;
+    if (draw2) {
+      drawSprite(sprite2, player2.x, player2.y, 2, player2.facing < 0, LUCA_COLORS);
+      ctx.fillStyle = '#000';
+      ctx.font = 'bold 9px Courier New';
+      ctx.textAlign = 'center';
+      ctx.fillText('LUCA', player2.x + player2.w/2 + 1, player2.y - 4);
+      ctx.fillStyle = '#ffa860';
+      ctx.fillText('LUCA', player2.x + player2.w/2, player2.y - 5);
+      ctx.textAlign = 'left';
+    }
   }
 
   ctx.restore();
@@ -1611,7 +1772,14 @@ function showMessage(text, duration) {
 
 // ============ CAMERA ============
 function updateCamera() {
-  const targetX = player.x - W / 3;
+  let targetX;
+  if (game.mode === 'coop') {
+    // Centre between both players
+    const mid = (player.x + player2.x) / 2;
+    targetX = mid - W / 2;
+  } else {
+    targetX = player.x - W / 3;
+  }
   game.cameraX += (targetX - game.cameraX) * 0.1;
   if (game.cameraX < 0) game.cameraX = 0;
   if (game.cameraX > currentLevel.length - W) game.cameraX = currentLevel.length - W;
@@ -1751,17 +1919,23 @@ function renderMenuArt() {
 }
 
 // ============ GAME STATES ============
-function startGame() {
+function startGame(mode) {
+  // When called from button: use explicit mode; when called from Restart button: keep current mode
+  game.mode = mode || game.mode || 'solo';
   game.state = 'playing';
   game.score = 0;
   game.hp = 3;
   game.stars = 0;
   game.teamFreed = 0;
   game.level = 0;
+  // Reset input states
+  input.left = input.right = input.jump = input.jumpPressed = false;
+  input2.left = input2.right = input2.jump = input2.jumpPressed = false;
   loadLevel(0);
   document.getElementById('overlay').classList.add('hidden');
   const t = TEAMS[0];
-  showMessage(`${t.emoji} Level 1: ${t.priority}`, 2500);
+  const label = game.mode === 'coop' ? '2P CO-OP · ' : '';
+  showMessage(`${label}${t.emoji} Level 1: ${t.priority}`, 2500);
   startMusic();
 }
 
@@ -2049,19 +2223,51 @@ document.getElementById('music-volume').addEventListener('input', (e) => {
 });
 
 // ============ INPUT ============
+// P1 (Sylvia): Arrows + Space
+// P2 (Luca):   WASD (W = jump)
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'ArrowLeft' || e.key === 'a') input.left = true;
-  if (e.key === 'ArrowRight' || e.key === 'd') input.right = true;
-  if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') {
+  const k = e.key.toLowerCase();
+  if (e.key === 'ArrowLeft') input.left = true;
+  if (e.key === 'ArrowRight') input.right = true;
+  if (e.key === ' ' || e.key === 'ArrowUp') {
     if (!input.jump) input.jumpPressed = true;
     input.jump = true;
     e.preventDefault();
   }
+  // Player 2 — WASD (only active in co-op)
+  if (game.mode === 'coop') {
+    if (k === 'a') input2.left = true;
+    if (k === 'd') input2.right = true;
+    if (k === 'w') {
+      if (!input2.jump) input2.jumpPressed = true;
+      input2.jump = true;
+      e.preventDefault();
+    }
+  } else {
+    // In solo, WASD still works as P1 for convenience
+    if (k === 'a') input.left = true;
+    if (k === 'd') input.right = true;
+    if (k === 'w') {
+      if (!input.jump) input.jumpPressed = true;
+      input.jump = true;
+      e.preventDefault();
+    }
+  }
 });
 document.addEventListener('keyup', (e) => {
-  if (e.key === 'ArrowLeft' || e.key === 'a') input.left = false;
-  if (e.key === 'ArrowRight' || e.key === 'd') input.right = false;
-  if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w') input.jump = false;
+  const k = e.key.toLowerCase();
+  if (e.key === 'ArrowLeft') input.left = false;
+  if (e.key === 'ArrowRight') input.right = false;
+  if (e.key === ' ' || e.key === 'ArrowUp') input.jump = false;
+  if (game.mode === 'coop') {
+    if (k === 'a') input2.left = false;
+    if (k === 'd') input2.right = false;
+    if (k === 'w') input2.jump = false;
+  } else {
+    if (k === 'a') input.left = false;
+    if (k === 'd') input.right = false;
+    if (k === 'w') input.jump = false;
+  }
 });
 
 function bindTouch(id, onDown, onUp) {
@@ -2110,11 +2316,12 @@ function loop() {
     render();
   } else if (game.state === 'menu') {
     renderMenuArt();
-    document.getElementById('hp').textContent = game.hp;
-    document.getElementById('score').textContent = game.score;
-    document.getElementById('stars').textContent = game.stars;
-    document.getElementById('team').textContent = game.teamFreed;
   }
+  // Always refresh the HUD — including during challenges, so HP drops stay visible
+  document.getElementById('hp').textContent = game.hp > 0 ? '❤️'.repeat(game.hp) : '💀';
+  document.getElementById('score').textContent = game.score;
+  document.getElementById('stars').textContent = game.stars;
+  document.getElementById('team').textContent = game.teamFreed;
   requestAnimationFrame(loop);
 }
 
@@ -2130,7 +2337,11 @@ document.getElementById('backBtn').addEventListener('click', () => {
 });
 document.getElementById('startBtn').addEventListener('click', () => {
   getAudio();
-  startGame();
+  startGame('solo');
+});
+document.getElementById('startCoopBtn').addEventListener('click', () => {
+  getAudio();
+  startGame('coop');
 });
 
 loadLevel(0);
