@@ -437,9 +437,9 @@
       <div class="rules-section">
         <h3>🏛️ 3 LEVELS · 3 TRIALS BY ACHIM</h3>
         <div class="levels-preview">
-          <div class="lvl-card"><strong>🌱 Lvl.1 — Green Transition</strong>Free the WEB team<br><i>Trial: Green Deal quiz</i></div>
+          <div class="lvl-card"><strong>🌱 Lvl.1 — Green Transition</strong>Free the WEB team<br><i>Trial: EU culture quiz<br>(capitals, flags, anthems)</i></div>
           <div class="lvl-card"><strong>🤝 Lvl.2 — Territorial Cohesion</strong>Free the Social Media team<br><i>Trial: Simon-says memory puzzle</i></div>
-          <div class="lvl-card"><strong>⭐ Lvl.3 — The Future of Europe</strong>Free the Visual Comm' team<br><i>Trial: EPSO abstract reasoning</i></div>
+          <div class="lvl-card"><strong>⭐ Lvl.3 — The Future of Europe</strong>Free the Visual Comm' team<br><i>Trial: Advanced EU quiz<br>(institutions, treaties, flags)</i></div>
         </div>
       </div>
 
@@ -741,70 +741,71 @@ const COLLEAGUE_STYLES = [
 
 // ============ ACHIM'S CHALLENGES ============
 
-// LEVEL 1 — Quiz on Green Transition / European Green Deal
+// LEVEL 1 — Easy EU general culture (capitals, flags, anthems, basics)
 const GREEN_QUIZ = [
-  { q: "By what year does the EU aim to be climate-neutral?",
-    opts: ["2030", "2040", "2050", "2070"], a: 2 },
-  { q: "What is the EU's flagship green strategy called?",
-    opts: ["Green New Deal", "European Green Deal", "EU Climate Pact", "Fit for 2030"], a: 1 },
-  { q: "'Fit for 55' sets what emissions reduction target by 2030?",
-    opts: ["25%", "40%", "55%", "70%"], a: 2 },
-  { q: "What does 'ETS' stand for in EU climate policy?",
-    opts: ["Energy Transfer System", "Emissions Trading System", "European Transport Scheme", "Eco Tax Standard"], a: 1 },
-  { q: "The Just Transition Fund mainly supports:",
-    opts: ["Agricultural subsidies", "Regions most affected by green transition", "Space research", "Defense industry"], a: 1 },
-  { q: "The EU Biodiversity Strategy aims to protect nature by:",
-    opts: ["2025", "2030", "2040", "2050"], a: 1 },
-  { q: "What share of EU land should be protected by 2030?",
-    opts: ["10%", "20%", "30%", "50%"], a: 2 },
-  { q: "The Farm to Fork Strategy is part of which initiative?",
-    opts: ["CAP reform", "European Green Deal", "Horizon Europe", "NextGenerationEU"], a: 1 },
-  { q: "CBAM stands for:",
-    opts: ["Carbon Border Adjustment Mechanism", "Clean Biofuel Allocation Method", "Circular Business Action Mandate", "Climate Budget Allocation Model"], a: 0 },
-  { q: "Which year is the EU's 'Fit for 55' package aligned with?",
-    opts: ["2025", "2030", "2040", "2050"], a: 1 },
-  { q: "The Renovation Wave aims to:",
-    opts: ["Modernize EU borders", "Double building renovation rates", "Rebuild coastlines", "Refurbish train networks"], a: 1 },
-  { q: "The Covenant of Mayors is coordinated with support of:",
-    opts: ["UN only", "The European Committee of the Regions", "WHO", "NATO"], a: 1 },
-  { q: "What is the main EU fund for climate-neutral cities?",
-    opts: ["LIFE Programme", "Cohesion Fund", "Horizon Europe Mission", "ESF+"], a: 2 },
-  { q: "Which EU institution represents local & regional authorities?",
-    opts: ["Council of Europe", "European Parliament", "Committee of the Regions", "Eurogroup"], a: 2 },
+  { q: "Capital of France?", opts: ["Paris", "Lyon", "Marseille", "Nice"], a: 0 },
+  { q: "Capital of Germany?", opts: ["Munich", "Berlin", "Hamburg", "Frankfurt"], a: 1 },
+  { q: "Capital of Italy?", opts: ["Milan", "Rome", "Venice", "Naples"], a: 1 },
+  { q: "Capital of Belgium?", opts: ["Antwerp", "Brussels", "Ghent", "Liège"], a: 1 },
+  { q: "Capital of Spain?", opts: ["Barcelona", "Madrid", "Seville", "Valencia"], a: 1 },
+  { q: "Capital of Portugal?", opts: ["Porto", "Lisbon", "Faro", "Braga"], a: 1 },
+  { q: "Capital of the Netherlands?", opts: ["Rotterdam", "The Hague", "Amsterdam", "Utrecht"], a: 2 },
+  { q: "Capital of Greece?", opts: ["Thessaloniki", "Athens", "Patras", "Heraklion"], a: 1 },
+  { q: "Capital of Austria?", opts: ["Salzburg", "Vienna", "Graz", "Linz"], a: 1 },
+  { q: "Capital of Sweden?", opts: ["Gothenburg", "Stockholm", "Malmö", "Uppsala"], a: 1 },
+  { q: "Capital of Poland?", opts: ["Krakow", "Warsaw", "Gdansk", "Lodz"], a: 1 },
+  { q: "Capital of Ireland?", opts: ["Cork", "Dublin", "Galway", "Limerick"], a: 1 },
+  { q: "Capital of Finland?", opts: ["Helsinki", "Oslo", "Stockholm", "Tallinn"], a: 0 },
+  { q: "Capital of Hungary?", opts: ["Prague", "Budapest", "Vienna", "Bratislava"], a: 1 },
+  { q: "Capital of Czech Republic?", opts: ["Bratislava", "Prague", "Warsaw", "Vienna"], a: 1 },
+  { q: "Capital of Denmark?", opts: ["Oslo", "Copenhagen", "Stockholm", "Helsinki"], a: 1 },
+  { q: "How many stars are on the European flag?", opts: ["10", "12", "15", "27"], a: 1 },
+  { q: "What are the colors of the EU flag?", opts: ["Blue and gold", "Red and white", "Green and gold", "Blue and white"], a: 0 },
+  { q: "The EU stars are arranged in...", opts: ["A line", "A square", "A circle", "A cross"], a: 2 },
+  { q: "What is the official EU anthem?", opts: ["Ode to Joy", "La Marseillaise", "Europa", "For a Peaceful Europe"], a: 0 },
+  { q: "Who composed the EU anthem?", opts: ["Mozart", "Beethoven", "Bach", "Brahms"], a: 1 },
+  { q: "What is the common currency of the EU?", opts: ["Euro", "ECU", "Franc", "Mark"], a: 0 },
+  { q: "How many countries are in the EU today?", opts: ["15", "25", "27", "30"], a: 2 },
+  { q: "Colors of the French flag?", opts: ["Red, white, green", "Blue, white, red", "Black, red, yellow", "Red, white, blue"], a: 1 },
+  { q: "Colors of the German flag?", opts: ["Black, red, yellow", "Blue, white, red", "Red, white, green", "Yellow, red, black"], a: 0 },
+  { q: "Colors of the Italian flag?", opts: ["Green, white, red", "Red, white, green", "Blue, white, red", "Red, white, blue"], a: 0 },
+  { q: "Colors of the Belgian flag?", opts: ["Black, yellow, red", "Red, yellow, black", "Yellow, red, black", "Red, black, yellow"], a: 0 },
+  { q: "Which anthem is 'La Marseillaise'?", opts: ["Spain", "France", "Italy", "Belgium"], a: 1 },
+  { q: "Which city hosts the Committee of the Regions?", opts: ["Strasbourg", "Brussels", "Luxembourg", "Frankfurt"], a: 1 },
 ];
 
-// LEVEL 3 — EPSO-style abstract reasoning
+// LEVEL 3 — Slightly harder EU culture (smaller capitals, flags, treaties, institutions)
 const EPSO_QUESTIONS = [
-  { q: "Complete the sequence: 2, 4, 8, 16, ?", opts: ["20", "24", "32", "64"], a: 2 },
-  { q: "Complete the sequence: 3, 6, 12, 24, ?", opts: ["36", "48", "32", "28"], a: 1 },
-  { q: "Complete the sequence: 1, 1, 2, 3, 5, 8, ?", opts: ["11", "12", "13", "16"], a: 2 },
-  { q: "Complete the sequence: 100, 81, 64, 49, ?", opts: ["36", "25", "40", "42"], a: 0 },
-  { q: "Which number does NOT fit: 7, 14, 21, 29, 35?", opts: ["7", "14", "29", "35"], a: 2 },
-  { q: "Complete: A, C, F, J, ?", opts: ["N", "O", "M", "P"], a: 1 },
-  { q: "Complete: AZ, BY, CX, ?", opts: ["DW", "DV", "EW", "DE"], a: 0 },
-  { q: "If TODAY = 20250, what is YODAT?", opts: ["05202", "02502", "05022", "25020"], a: 0 },
-  { q: "Which word is the odd one out?", opts: ["Rome", "Paris", "Berlin", "Vienna"], a: 0,
-    _hint: "Three are capitals of EU founding members, one isn't" }, // actually all are EU capitals; let me fix
-  { q: "Pattern: 2→6, 3→12, 4→20, 5→?", opts: ["25", "30", "32", "28"], a: 1 },
-  { q: "Complete: 81, 27, 9, 3, ?", opts: ["0", "1", "2", "-3"], a: 1 },
-  { q: "Which does NOT belong: Circle, Triangle, Square, Pentagon, Hexagon?",
-    opts: ["Circle", "Triangle", "Square", "Pentagon"], a: 0 },
-  { q: "A is north of B. C is east of A. Where is C relative to B?",
-    opts: ["Northwest", "Southeast", "Northeast", "Southwest"], a: 2 },
-  { q: "Complete: 5, 11, 23, 47, ?", opts: ["71", "93", "95", "94"], a: 2 },
-  { q: "If all CoR members attend meetings, and Sylvia is a CoR member, then Sylvia:",
-    opts: ["Might attend meetings", "Attends meetings", "Does not attend", "Chairs the meeting"], a: 1 },
-  { q: "Complete: J, F, M, A, M, J, ?", opts: ["J", "A", "S", "O"], a: 0,
-    _hint: "Months of the year" },
-  { q: "Which is NOT a prime number?", opts: ["17", "23", "27", "29"], a: 2 },
+  { q: "Capital of Slovenia?", opts: ["Zagreb", "Ljubljana", "Bratislava", "Bucharest"], a: 1 },
+  { q: "Capital of Slovakia?", opts: ["Zagreb", "Bratislava", "Budapest", "Vienna"], a: 1 },
+  { q: "Capital of Estonia?", opts: ["Riga", "Tallinn", "Vilnius", "Helsinki"], a: 1 },
+  { q: "Capital of Latvia?", opts: ["Vilnius", "Riga", "Tallinn", "Warsaw"], a: 1 },
+  { q: "Capital of Lithuania?", opts: ["Vilnius", "Riga", "Tallinn", "Kaunas"], a: 0 },
+  { q: "Capital of Romania?", opts: ["Bucharest", "Budapest", "Sofia", "Belgrade"], a: 0 },
+  { q: "Capital of Bulgaria?", opts: ["Bucharest", "Sofia", "Belgrade", "Zagreb"], a: 1 },
+  { q: "Capital of Luxembourg?", opts: ["Luxembourg City", "Esch", "Differdange", "Dudelange"], a: 0 },
+  { q: "Capital of Cyprus?", opts: ["Larnaca", "Limassol", "Nicosia", "Paphos"], a: 2 },
+  { q: "Capital of Malta?", opts: ["Valletta", "Mdina", "Birkirkara", "Sliema"], a: 0 },
+  { q: "Capital of Croatia?", opts: ["Zagreb", "Split", "Dubrovnik", "Rijeka"], a: 0 },
+  { q: "Which country is NOT in the eurozone?", opts: ["Finland", "Sweden", "Germany", "Spain"], a: 1 },
+  { q: "Which country is NOT in the EU?", opts: ["Norway", "Austria", "Finland", "Portugal"], a: 0 },
+  { q: "Where is the European Central Bank based?", opts: ["Frankfurt", "Brussels", "Strasbourg", "Luxembourg"], a: 0 },
+  { q: "Official seat of the European Parliament?", opts: ["Brussels", "Strasbourg", "Luxembourg", "Frankfurt"], a: 1 },
+  { q: "Which year did the UK leave the EU?", opts: ["2016", "2018", "2020", "2021"], a: 2 },
+  { q: "Most recent country to join the EU?", opts: ["Romania", "Bulgaria", "Croatia", "Malta"], a: 2 },
+  { q: "How many official EU languages?", opts: ["15", "20", "24", "27"], a: 2 },
+  { q: "Which was NOT a founding EEC country (1957)?", opts: ["Luxembourg", "Spain", "Netherlands", "Italy"], a: 1 },
+  { q: "Which treaty founded the European Union by name?", opts: ["Rome", "Maastricht", "Lisbon", "Paris"], a: 1 },
+  { q: "Which flag is a yellow cross on blue?", opts: ["Denmark", "Finland", "Sweden", "Iceland"], a: 2 },
+  { q: "Which flag is a blue cross on white?", opts: ["Denmark", "Finland", "Sweden", "Iceland"], a: 1 },
+  { q: "Which flag is a white cross on red (EU member)?", opts: ["Austria", "Denmark", "Poland", "Malta"], a: 1 },
+  { q: "The CoR represents which level of governance?", opts: ["National", "Regional and local", "Federal", "Supranational"], a: 1 },
+  { q: "Which anthem begins 'Allons enfants de la patrie'?", opts: ["Germany", "France", "Italy", "Spain"], a: 1 },
+  { q: "The Italian anthem is 'Il Canto degli ___'?", opts: ["Romani", "Italiani", "Siciliani", "Veneziani"], a: 1 },
+  { q: "Year the euro became physical currency?", opts: ["1999", "2002", "2004", "2007"], a: 1 },
+  { q: "Flag with horizontal stripes blue-black-white?", opts: ["Estonia", "Latvia", "Lithuania", "Poland"], a: 0 },
+  { q: "Capital of Belgium hosts which EU institution's main HQ?", opts: ["European Central Bank", "Court of Justice", "European Commission", "Council of Europe"], a: 2 },
 ];
-
-// Fix the odd-one-out question — Rome, Paris, Berlin, Vienna — all are EU capitals, so rewrite
-EPSO_QUESTIONS[8] = {
-  q: "Which is the odd one out: Oslo, Paris, Berlin, Rome?",
-  opts: ["Oslo", "Paris", "Berlin", "Rome"], a: 0,
-  _hint: "Three are EU capitals, one isn't"
-};
 
 let currentChallenge = null; // { colleague, type }
 
@@ -1243,8 +1244,8 @@ function showEpsoChallenge(colleague) {
   overlay.innerHTML = `
     <div class="challenge-box">
       <div class="achim-emoji">🧙‍♂️</div>
-      <div class="achim-header">ACHIM the Terrible — EPSO Trial</div>
-      <div class="achim-taunt">"Abstract reasoning, mortal! Think like an EU civil servant,<br>or <b>${colleague.name}</b> is condemned to filing eternity!"</div>
+      <div class="achim-header">ACHIM the Terrible — Final Trial</div>
+      <div class="achim-taunt">"The final test, mortal! Prove your knowledge of Europe,<br>or <b>${colleague.name}</b> is condemned to filing eternity!"</div>
       <div class="challenge-prompt">${q.q}</div>
       <div class="challenge-options">
         ${q.opts.map((o, i) => `<button class="opt-btn" data-idx="${i}">${o}</button>`).join('')}
