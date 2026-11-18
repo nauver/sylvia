@@ -481,8 +481,8 @@ ctx.imageSmoothingEnabled = false;
 
 const W = canvas.width;
 const H = canvas.height;
-const GRAVITY = 0.6;
-const JUMP_POWER = -12;
+const GRAVITY = 0.55;
+const JUMP_POWER = -13;
 const MOVE_SPEED = 3.5;
 
 // ============ EU COLORS ============
@@ -880,69 +880,86 @@ const input = { left: false, right: false, jump: false, jumpPressed: false };
 // ============ LEVELS ============
 function buildLevel(num) {
   const team = TEAMS[num];
-  const length = 4000 + num * 800;
+  const length = 3200 + num * 600;
   const platforms = [];
+  const groundSegments = []; // keep track to place floating platforms above ground only
+
+  // Ground segments with small gaps
   let gx = 0;
   while (gx < length) {
-    const segW = 300 + Math.floor(Math.random() * 400);
+    const segW = 380 + Math.floor(Math.random() * 300);
     platforms.push({ x: gx, y: H - 60, w: segW, h: 60, type: 'ground' });
-    const gap = 60 + Math.floor(Math.random() * 60);
+    groundSegments.push({ x: gx, w: segW });
+    const gap = 35 + Math.floor(Math.random() * 35); // smaller, friendlier gaps
     gx += segW + gap;
   }
-  for (let i = 0; i < 14 + num * 3; i++) {
-    const px = 300 + Math.random() * (length - 500);
-    const py = 180 + Math.random() * 180;
-    const pw = 80 + Math.random() * 100;
+
+  // Floating platforms — only above ground segments, at reachable heights
+  // Jump math: JUMP_POWER=-13, GRAVITY=0.55 → max jump height ~154px
+  // Ground top is at y = H-60 = 420 → min reachable platform-top y ≈ 420-150 = 270
+  // We stay comfortably above that: y range 300..380
+  const floatingCount = 8 + num * 2;
+  let added = 0, attempts = 0;
+  while (added < floatingCount && attempts < 60) {
+    attempts++;
+    const seg = groundSegments[Math.floor(Math.random() * groundSegments.length)];
+    if (seg.w < 180) continue; // avoid too-small segments
+    const pw = 90 + Math.random() * 70;
+    if (seg.w < pw + 60) continue;
+    const px = seg.x + 30 + Math.random() * (seg.w - pw - 60);
+    const py = 300 + Math.random() * 80; // reachable height
     platforms.push({ x: px, y: py, w: pw, h: 20, type: 'platform' });
+    added++;
   }
 
   const enemies = [];
   const enemyTypes = ['paper', 'phone', 'email'];
-  // Harder: more enemies, faster, wider patrols
-  const enemyCount = 14 + num * 6;
+  // Easier: fewer, slower enemies
+  const enemyCount = 6 + num * 3;
   for (let i = 0; i < enemyCount; i++) {
-    const ex = 400 + Math.random() * (length - 600);
+    const ex = 450 + Math.random() * (length - 700);
     const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
-    const speedBoost = 1.2 + num * 0.3;
+    const speedBoost = 0.7 + num * 0.15;
     enemies.push({
       x: ex, y: H - 60 - 28, w: 32, h: 28,
-      vx: (Math.random() < 0.5 ? -1 : 1) * (speedBoost + Math.random() * 0.8),
+      vx: (Math.random() < 0.5 ? -1 : 1) * (speedBoost + Math.random() * 0.4),
       type, alive: true, animTime: 0,
-      patrolStart: ex - 90, patrolEnd: ex + 90,
+      patrolStart: ex - 70, patrolEnd: ex + 70,
     });
   }
-  // Add some flying enemies on floating platforms for levels 2 and 3
+  // A few flying enemies for level 2+ (fewer than before)
   if (num >= 1) {
-    for (let i = 0; i < 4 + num * 2; i++) {
-      const ex = 500 + Math.random() * (length - 700);
-      const ey = 200 + Math.random() * 120;
+    const flyingCount = num; // 1 or 2 flyers only
+    for (let i = 0; i < flyingCount; i++) {
+      const ex = 600 + Math.random() * (length - 900);
+      const ey = 240 + Math.random() * 60;
       enemies.push({
         x: ex, y: ey, w: 32, h: 28,
-        vx: (Math.random() < 0.5 ? -1 : 1) * (1.5 + num * 0.3),
+        vx: (Math.random() < 0.5 ? -1 : 1) * (1.0 + num * 0.15),
         type: 'email', alive: true, animTime: 0,
-        patrolStart: ex - 120, patrolEnd: ex + 120,
+        patrolStart: ex - 100, patrolEnd: ex + 100,
       });
     }
   }
 
   const items = [];
-  // Signed forms
+  // Signed forms — all within jump reach from the ground
   for (let i = 0; i < 12 + num * 2; i++) {
     const ix = 200 + Math.random() * (length - 400);
-    const iy = 200 + Math.random() * 180;
+    const iy = 300 + Math.random() * 90; // 300..390, easily jumpable
     items.push({ x: ix, y: iy, w: 24, h: 28, type: 'form', collected: false, animTime: Math.random() * Math.PI * 2 });
   }
-  // EU Stars (12 per level — reference to EU flag)
+  // EU Stars (12 per level — reference to EU flag), also reachable
   for (let i = 0; i < 12; i++) {
     const ix = 300 + (i / 12) * (length - 400) + Math.random() * 100;
-    const iy = 150 + Math.random() * 220;
+    const iy = 270 + Math.random() * 110; // 270..380, reachable from ground or platforms
     items.push({ x: ix, y: iy, w: 28, h: 24, type: 'eustar', collected: false, animTime: Math.random() * Math.PI * 2 });
   }
-  // Coffee — fewer in harder levels
-  const coffeeCount = Math.max(1, 3 - num);
+  // Coffee — more generous
+  const coffeeCount = 4;
   for (let i = 0; i < coffeeCount; i++) {
-    const ix = 500 + Math.random() * (length - 800);
-    items.push({ x: ix, y: 240, w: 24, h: 28, type: 'coffee', collected: false, animTime: Math.random() * Math.PI * 2 });
+    const ix = 400 + Math.random() * (length - 700);
+    items.push({ x: ix, y: 340, w: 24, h: 28, type: 'coffee', collected: false, animTime: Math.random() * Math.PI * 2 });
   }
 
   // Colleagues in cages — spaced through the level
