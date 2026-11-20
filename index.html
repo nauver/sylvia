@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>Sylvia's CoR Quest</title>
+<title>Sylvia&#39;s CoR Quest</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body {
@@ -411,10 +411,10 @@
       <canvas id="menu-art" width="500" height="220"></canvas>
       <div class="char-badges">
         <span>🦸 SYLVIA — the hero</span>
-        <span>🧙‍♂️ ACHIM — the villain</span>
+        <span>🧙‍♂️ LORD VETO — the villain</span>
       </div>
       <p class="intro-tagline">
-        The terrible wizard <b style="color:#e0c0ff">ACHIM</b> has locked Sylvia's colleagues in office-cages<br>
+        The terrible bureaucrat-wizard <b style="color:#e0c0ff">LORD VETO</b> has locked Sylvia's colleagues in office-cages<br>
         across the <b style="color:#FFCC00">3 priorities</b> of the Committee of the Regions.<br>
         Only Sylvia, with her wit and courage, can save them!
       </p>
@@ -435,7 +435,7 @@
       </div>
 
       <div class="rules-section">
-        <h3>🏛️ 3 LEVELS · 3 TRIALS BY ACHIM</h3>
+        <h3>🏛️ 3 LEVELS · 3 TRIALS BY LORD VETO</h3>
         <div class="levels-preview">
           <div class="lvl-card"><strong>🌱 Lvl.1 — Green Transition</strong>Free the WEB team<br><i>Trial: EU culture quiz<br>(capitals, flags, anthems)</i></div>
           <div class="lvl-card"><strong>🤝 Lvl.2 — Territorial Cohesion</strong>Free the Social Media team<br><i>Trial: Simon-says memory puzzle</i></div>
@@ -462,7 +462,7 @@
         <div class="instructions" style="font-size:13px">
           <b style="color:#FFCC00">SOLO</b>: Only Sylvia (arrows / space)<br>
           <b style="color:#ffa860">CO-OP</b>: Sylvia + Luca on the same keyboard · help each other<br>
-          <span style="font-size:11px;color:#ccc">In co-op: shared lives · both must stand near a cage to trigger Achim · both must reach Fabrizio · you can jump on each other's head!</span>
+          <span style="font-size:11px;color:#ccc">In co-op: shared lives · both must stand near a cage to trigger Lord Veto · both must reach Fabrizio · you can jump on each other's head!</span>
         </div>
       </div>
 
@@ -1269,7 +1269,7 @@ function closeChallenge(success) {
     setTimeout(() => sfx(1500, 0.15), 160);
   } else if (col) {
     col.cooldown = 120; // 2s cooldown before next attempt
-    showMessage(`❌ Wrong! Achim cackles...`, 1700);
+    showMessage(`❌ Wrong! Lord Veto cackles...`, 1700);
     hurtPlayer();
     // bump player away
     player.x = Math.max(0, player.x - 50 * player.facing);
@@ -1279,9 +1279,9 @@ function closeChallenge(success) {
 
 // --- Taunt lines Achim throws at Sylvia ---
 const ACHIM_TAUNTS = [
-  "Fool! Only the worthy pass Achim's tests!",
+  "Fool! Only the worthy pass Lord Veto's tests!",
   "Answer, mortal, or your colleague rots in this cage!",
-  "I, Achim, Keeper of Paperwork, shall judge you!",
+  "I, Lord Veto, Keeper of Paperwork, shall judge you!",
   "Hehehe... try your luck, little assistant!",
   "One wrong move and you join the paperasse!",
   "Bureaucracy is my magic. Prove your worth!",
@@ -1295,7 +1295,7 @@ function showQuizChallenge(colleague) {
   overlay.innerHTML = `
     <div class="challenge-box">
       <div class="achim-emoji">🧙‍♂️</div>
-      <div class="achim-header">ACHIM the Terrible</div>
+      <div class="achim-header">🧙‍♂️ LORD VETO</div>
       <div class="achim-taunt">"${pickTaunt()}<br>Answer my riddle to free <b>${colleague.name}</b>!"</div>
       <div class="challenge-prompt">${q.q}</div>
       <div class="challenge-options">
@@ -1326,7 +1326,7 @@ function showSimonChallenge(colleague) {
   overlay.innerHTML = `
     <div class="challenge-box">
       <div class="achim-emoji">🧙‍♂️</div>
-      <div class="achim-header">ACHIM the Terrible</div>
+      <div class="achim-header">🧙‍♂️ LORD VETO</div>
       <div class="achim-taunt">"Watch and repeat my pattern, or <b>${colleague.name}</b> is MINE forever!"</div>
       <div class="simon-grid">
         <button class="simon-btn s0" data-idx="0" disabled></button>
@@ -1384,7 +1384,7 @@ function showEpsoChallenge(colleague) {
   overlay.innerHTML = `
     <div class="challenge-box">
       <div class="achim-emoji">🧙‍♂️</div>
-      <div class="achim-header">ACHIM the Terrible — Final Trial</div>
+      <div class="achim-header">🧙‍♂️ LORD VETO — Final Trial</div>
       <div class="achim-taunt">"The final test, mortal! Prove your knowledge of Europe,<br>or <b>${colleague.name}</b> is condemned to filing eternity!"</div>
       <div class="challenge-prompt">${q.q}</div>
       <div class="challenge-options">
@@ -1596,9 +1596,9 @@ function render() {
       ctx.fillStyle = '#000';
       ctx.font = 'bold 9px Courier New';
       ctx.textAlign = 'center';
-      ctx.fillText('ACHIM', achimX + 12, achimY - 4);
+      ctx.fillText('LORD VETO', achimX + 12, achimY - 4);
       ctx.fillStyle = '#e0c0ff';
-      ctx.fillText('ACHIM', achimX + 12 - 1, achimY - 5);
+      ctx.fillText('LORD VETO', achimX + 12 - 1, achimY - 5);
       ctx.textAlign = 'left';
     } else {
       // Freed: follow Sylvia with offset
